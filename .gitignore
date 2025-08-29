@@ -1,2 +1,3 @@
 pest/
 .env
+.cache.sqlite
