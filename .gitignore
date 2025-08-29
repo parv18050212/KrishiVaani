@@ -1,0 +1,5 @@
+.env
+Pest/
+Pesticide_Dataset/
+openMeteo.py
+openWeather.py
