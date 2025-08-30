@@ -16,6 +16,18 @@ export interface PestDetectionResult {
   pestName: string;
   severity: string;
   confidence: string;
+  confidenceBreakdown?: {
+    image_quality: string;
+    pest_name_match: string;
+    pesticide_availability: string;
+    response_consistency: string;
+  };
+  confidenceFactors?: {
+    image_size_adequate: boolean;
+    pest_in_database: boolean;
+    pesticides_available: boolean;
+    response_consistent: boolean;
+  };
   treatment: {
     hindi: string;
     english: string;

@@ -219,6 +219,63 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
                   </Badge>
                 </div>
                 
+                {/* Confidence Breakdown */}
+                {analysisResult.confidenceBreakdown && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Confidence Breakdown:
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Image Quality:</span>
+                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.image_quality}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Pest Match:</span>
+                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.pest_name_match}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Pesticide Data:</span>
+                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.pesticide_availability}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Response Quality:</span>
+                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.response_consistency}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Confidence Factors */}
+                    {analysisResult.confidenceFactors && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs font-medium text-gray-700 mb-2">
+                          Quality Indicators:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {analysisResult.confidenceFactors.image_size_adequate && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              ✓ Good Image
+                            </Badge>
+                          )}
+                          {analysisResult.confidenceFactors.pest_in_database && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              ✓ Known Pest
+                            </Badge>
+                          )}
+                          {analysisResult.confidenceFactors.pesticides_available && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              ✓ Treatment Available
+                            </Badge>
+                          )}
+                          {analysisResult.confidenceFactors.response_consistent && (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              ✓ Reliable Analysis
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {analysisResult.severity === 'High' && (
                   <div className="flex items-center gap-2 p-3 bg-red-100 rounded-lg">
                     <AlertTriangle className="h-5 w-5 text-red-600" />

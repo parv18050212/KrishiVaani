@@ -411,3 +411,4 @@ For support and questions, please open an issue on GitHub.
 
 For issues and questions, please check the troubleshooting section or create an issue in the repository.
 >>>>>>> MandiAI
+

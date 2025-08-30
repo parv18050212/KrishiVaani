@@ -9,6 +9,9 @@ import pandas as pd
 import io
 from PIL import Image
 import logging
+import re
+import json
+from typing import Dict, List, Tuple, Optional
 
 # Load environment variables
 load_dotenv()
@@ -51,6 +54,153 @@ try:
 except Exception as e:
     logger.error(f"Error initializing OpenAI client: {e}")
     client = None
+
+class ConfidenceCalculator:
+    """Calculate confidence score based on multiple factors"""
+    
+    def __init__(self, pesticides_df: pd.DataFrame):
+        self.pesticides_df = pesticides_df
+        self.known_pests = set(pesticides_df['Pest Name'].str.lower().tolist()) if len(pesticides_df) > 0 else set()
+    
+    def calculate_image_quality_score(self, image_data: bytes) -> float:
+        """Calculate confidence based on image quality"""
+        try:
+            image = Image.open(io.BytesIO(image_data))
+            width, height = image.size
+            
+            # Check image dimensions
+            if width < 100 or height < 100:
+                return 0.3  # Very low confidence for tiny images
+            elif width < 300 or height < 300:
+                return 0.6  # Low confidence for small images
+            elif width < 800 or height < 800:
+                return 0.8  # Medium confidence for medium images
+            else:
+                return 0.95  # High confidence for large images
+                
+        except Exception as e:
+            logger.warning(f"Error analyzing image quality: {e}")
+            return 0.5  # Default medium confidence
+    
+    def calculate_pest_name_confidence(self, pest_name: str) -> float:
+        """Calculate confidence based on pest name matching with known pests"""
+        if not pest_name or len(pest_name.strip()) == 0:
+            return 0.0
+        
+        pest_name_lower = pest_name.lower().strip()
+        
+        # Exact match
+        if pest_name_lower in self.known_pests:
+            return 0.95
+        
+        # Partial match (contains)
+        for known_pest in self.known_pests:
+            if pest_name_lower in known_pest or known_pest in pest_name_lower:
+                return 0.85
+        
+        # Fuzzy match (common words)
+        common_pest_words = ['aphid', 'beetle', 'worm', 'mite', 'fly', 'bug', 'hopper', 'borer', 'cricket', 'grasshopper']
+        for word in common_pest_words:
+            if word in pest_name_lower:
+                return 0.7
+        
+        # If no match found, lower confidence
+        return 0.4
+    
+    def calculate_pesticide_availability_score(self, pesticides: List[str]) -> float:
+        """Calculate confidence based on pesticide availability"""
+        if not pesticides:
+            return 0.3  # Low confidence if no pesticides found
+        
+        # Higher confidence if more pesticides are available
+        if len(pesticides) >= 3:
+            return 0.9
+        elif len(pesticides) == 2:
+            return 0.8
+        elif len(pesticides) == 1:
+            return 0.7
+        else:
+            return 0.3
+    
+    def calculate_response_consistency_score(self, pest_name: str, treatment_info: str, severity: str) -> float:
+        """Calculate confidence based on response consistency"""
+        score = 0.5  # Base score
+        
+        # Check if treatment info is meaningful
+        if treatment_info and len(treatment_info.strip()) > 10:
+            score += 0.2
+        
+        # Check if severity is valid
+        valid_severities = ['low', 'medium', 'high']
+        if severity.lower() in valid_severities:
+            score += 0.2
+        
+        # Check if pest name and treatment are related
+        if pest_name and treatment_info:
+            # Simple keyword matching
+            pest_keywords = pest_name.lower().split()
+            treatment_lower = treatment_info.lower()
+            
+            # Check if any pest-related keywords appear in treatment
+            pest_related_words = ['pest', 'insect', 'bug', 'worm', 'mite', 'aphid', 'beetle']
+            for word in pest_related_words:
+                if word in treatment_lower:
+                    score += 0.1
+                    break
+        
+        return min(score, 1.0)  # Cap at 1.0
+    
+    def calculate_overall_confidence(self, 
+                                   image_data: bytes, 
+                                   pest_name: str, 
+                                   pesticides: List[str], 
+                                   treatment_info: str, 
+                                   severity: str) -> Dict[str, any]:
+        """Calculate overall confidence score and breakdown"""
+        
+        # Calculate individual scores
+        image_score = self.calculate_image_quality_score(image_data)
+        pest_name_score = self.calculate_pest_name_confidence(pest_name)
+        pesticide_score = self.calculate_pesticide_availability_score(pesticides)
+        consistency_score = self.calculate_response_consistency_score(pest_name, treatment_info, severity)
+        
+        # Weighted average (you can adjust these weights)
+        weights = {
+            'image_quality': 0.25,
+            'pest_name_match': 0.35,
+            'pesticide_availability': 0.25,
+            'response_consistency': 0.15
+        }
+        
+        overall_confidence = (
+            image_score * weights['image_quality'] +
+            pest_name_score * weights['pest_name_match'] +
+            pesticide_score * weights['pesticide_availability'] +
+            consistency_score * weights['response_consistency']
+        )
+        
+        # Convert to percentage
+        confidence_percentage = round(overall_confidence * 100, 1)
+        
+        return {
+            'overall_confidence': f"{confidence_percentage}%",
+            'confidence_score': confidence_percentage,
+            'breakdown': {
+                'image_quality': f"{image_score * 100:.1f}%",
+                'pest_name_match': f"{pest_name_score * 100:.1f}%",
+                'pesticide_availability': f"{pesticide_score * 100:.1f}%",
+                'response_consistency': f"{consistency_score * 100:.1f}%"
+            },
+            'factors': {
+                'image_size_adequate': image_score > 0.7,
+                'pest_in_database': pest_name_score > 0.8,
+                'pesticides_available': pesticide_score > 0.6,
+                'response_consistent': consistency_score > 0.7
+            }
+        }
+
+# Initialize confidence calculator
+confidence_calculator = ConfidenceCalculator(df)
 
 @app.get("/")
 async def root():
@@ -143,7 +293,6 @@ async def detect_pest(file: UploadFile = File(...)):
         if len(df) > 0:
             try:
                 # Escape special regex characters in pest_name
-                import re
                 escaped_pest_name = re.escape(pest_name)
                 pest_row = df[df['Pest Name'].str.contains(escaped_pest_name, case=False, na=False)]
                 if not pest_row.empty:
@@ -154,7 +303,6 @@ async def detect_pest(file: UploadFile = File(...)):
         
         # Parse severity and prevention info
         try:
-            import json
             severity_data = json.loads(severity_prevention_info)
             severity = severity_data.get("severity", "Medium")
             prevention_english = severity_data.get("prevention_english", "Keep field clean. Maintain proper irrigation.")
@@ -162,12 +310,19 @@ async def detect_pest(file: UploadFile = File(...)):
             severity = "Medium"
             prevention_english = "Keep field clean. Maintain proper irrigation."
         
+        # Calculate confidence score
+        confidence_data = confidence_calculator.calculate_overall_confidence(
+            image_data, pest_name, pesticides, treatment_info, severity
+        )
+        
         # Prepare response
         result = {
             "pestDetected": True,
             "pestName": pest_name,
             "severity": severity,
-            "confidence": "85%",  # Default confidence
+            "confidence": confidence_data['overall_confidence'],
+            "confidenceBreakdown": confidence_data['breakdown'],
+            "confidenceFactors": confidence_data['factors'],
             "treatment": {
                 "english": treatment_info
             },
