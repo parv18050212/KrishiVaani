@@ -3,6 +3,7 @@ import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8000';
 const WEATHER_API_BASE_URL = 'http://localhost:8001';
 const MARKET_API_BASE_URL = 'http://localhost:8002';
+const OCR_API_BASE_URL = 'http://localhost:8003';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -199,6 +200,81 @@ export const marketAPI = {
   // Health check
   healthCheck: async () => {
     const response = await marketApi.get('/health');
+    return response.data;
+  },
+};
+
+// Create separate axios instance for OCR API
+const ocrApi = axios.create({
+  baseURL: OCR_API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export interface SoilAnalysisResult {
+  status: string;
+  soil_health: {
+    nitrogen: {
+      value: string;
+      level: string;
+      percentage: number;
+    };
+    phosphorus: {
+      value: string;
+      level: string;
+      percentage: number;
+    };
+    potassium: {
+      value: string;
+      level: string;
+      percentage: number;
+    };
+    ph: {
+      value: string;
+      level: string;
+      percentage: number;
+    };
+  };
+  fertilizer_plan: {
+    crop_data: {
+      name: string;
+      stage: string;
+      progress: number;
+      nextFertilizer: string;
+    };
+    current_plan: Array<{
+      fertilizer: string;
+      amount: string;
+      timing: string;
+      method: string;
+      status: string;
+      priority: string;
+    }>;
+    recommendations: {
+      english: string;
+    };
+  };
+}
+
+export const fertilizerAPI = {
+  // Analyze soil health card image
+  analyzeSoil: async (imageFile: File): Promise<SoilAnalysisResult> => {
+    const formData = new FormData();
+    formData.append('file', imageFile);
+    
+    const response = await ocrApi.post('/analyze-soil', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  },
+
+  // Health check
+  healthCheck: async () => {
+    const response = await ocrApi.get('/health');
     return response.data;
   },
 };

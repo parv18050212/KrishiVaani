@@ -1,414 +1,269 @@
-<<<<<<< HEAD
-# KrishiVaani - Pest Detection System
+# 🌾 KrishiVaani - Farmer-Friendly Crop Advisory Mobile App
 
-A comprehensive pest detection system for farmers that uses AI to identify pests from images and provides treatment recommendations.
-
-## Features
-
-- 🐛 **AI-Powered Pest Detection**: Uses Perplexity AI to identify pests from crop images
-- 💊 **Treatment Recommendations**: Provides specific treatment and pesticide recommendations
-- 🌾 **Pesticide Database**: Includes a comprehensive database of pesticides for different pests
-- 📱 **Mobile-Friendly UI**: Beautiful, responsive interface in Hindi and English
-- 🔄 **Real-time Analysis**: Fast API backend for quick pest identification
-
-## Project Structure
-
-```
-KrishiVaani/
-├── frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── services/        # API services
-│   │   └── ...
-├── pest/                    # Pest image dataset
-├── api.py                   # FastAPI backend
-├── pestNew.py              # Original Python script
-├── Pesticides.csv          # Pesticide database
-├── requirements.txt        # Python dependencies
-└── start_backend.py        # Backend startup script
-```
-
-## Setup Instructions
-
-### Prerequisites
-
-- Python 3.8+
-- Node.js 16+
-- Perplexity AI API key (free at https://www.perplexity.ai/settings/api)
-
-### 1. Backend Setup
-
-1. **Install Python dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Set up environment variables:**
-   Create a `.env` file in the root directory:
-   ```env
-   perplexity_api=your_perplexity_api_key_here
-   ```
-
-3. **Start the backend server:**
-   ```bash
-   python start_backend.py
-   ```
-   
-   The API will be available at:
-   - API: http://localhost:8000
-   - Documentation: http://localhost:8000/docs
-   - Health Check: http://localhost:8000/health
-
-### 2. Frontend Setup
-
-1. **Navigate to frontend directory:**
-   ```bash
-   cd frontend
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-   
-   The frontend will be available at: http://localhost:5173
-
-## API Endpoints
-
-### POST /detect-pest
-Upload an image to detect pests and get treatment recommendations.
-
-**Request:**
-- Content-Type: `multipart/form-data`
-- Body: Image file
-
-**Response:**
-```json
-{
-  "pestDetected": true,
-  "pestName": "Aphids",
-  "severity": "मध्यम / Medium",
-  "confidence": "85%",
-  "treatment": {
-    "hindi": "नीम का तेल स्प्रे करें",
-    "english": "Spray neem oil"
-  },
-  "pesticides": ["Imidacloprid", "Acetamiprid", "Thiamethoxam"],
-  "prevention": {
-    "hindi": "खेत को साफ रखें",
-    "english": "Keep field clean"
-  }
-}
-```
-
-### GET /pesticides
-Get the complete list of pests and their recommended pesticides.
-
-### GET /health
-Health check endpoint to verify API status.
-
-## Usage
-
-1. **Start both servers** (backend and frontend)
-2. **Open the frontend** in your browser
-3. **Navigate to Pest Detection** feature
-4. **Upload an image** of a crop or pest
-5. **View the analysis results** including:
-   - Pest identification
-   - Treatment recommendations
-   - Recommended pesticides
-   - Prevention tips
-
-## Technology Stack
-
-### Backend
-- **FastAPI**: Modern, fast web framework
-- **Perplexity AI**: AI-powered pest identification
-- **Pandas**: Data processing for pesticide database
-- **Python-multipart**: File upload handling
-
-### Frontend
-- **React 18**: UI framework
-- **TypeScript**: Type safety
-- **Tailwind CSS**: Styling
-- **Axios**: HTTP client
-- **Radix UI**: Accessible components
-- **Vite**: Build tool
-
-## Contributing
-=======
-# KrishiVaani - Agricultural Advisory Platform
-
-A comprehensive agricultural advisory platform with pest detection, weather forecasting, and market price analysis.
+KrishiVaani is a comprehensive agricultural advisory platform that leverages AI and machine learning to provide farmers with real-time weather information, pest detection, fertilizer recommendations, and market price insights. The application is designed to be accessible in multiple languages and provides a user-friendly interface for farmers to make informed agricultural decisions.
 
 ## 🚀 Features
 
-- **Pest Detection**: AI-powered pest identification with treatment recommendations
-- **Weather Advisory**: Real-time weather data with agricultural recommendations
-- **Market Prices**: Location-based market price analysis and trends
-- **Fertilizer Planning**: Crop-specific fertilizer recommendations
-- **Modern UI**: Responsive React frontend with beautiful design
+### 🌤️ Weather Advisory
+- Real-time weather forecasts using Open-Meteo API
+- Agricultural-specific weather insights
+- Soil temperature and moisture monitoring
+- UV index and wind speed analysis
+- AI-powered crop-specific weather recommendations
 
-## 📋 Prerequisites
+### 🐛 Pest Detection
+- Image-based pest identification using AI
+- Treatment recommendations with confidence scoring
+- Comprehensive pesticide database
+- Image quality assessment for better accuracy
+- Multi-language support for pest information
 
-- Python 3.8+
-- Node.js 16+
-- npm or yarn
-- Google AI API key (for pest detection and weather advisory)
-- Perplexity AI API key (for market price analysis)
+### 🌱 Fertilizer Planning
+- AI-powered fertilizer recommendations
+- Crop-specific nutrient management
+- Soil health analysis
+- Seasonal fertilizer planning
+- Cost-effective fertilizer suggestions
 
-## 🛠️ Setup Instructions
+### 📊 Market Price Analysis
+- Real-time agricultural commodity prices
+- Location-based market insights
+- Price trend analysis
+- Market forecasting using AI
+- Multi-language market information
 
-### 1. Environment Variables
+### 💬 AI Chat Assistant (RAG)
+- Retrieval-Augmented Generation (RAG) powered chat
+- Context-aware agricultural advice
+- Integration with Supabase vector database
+- Gemini AI embeddings for semantic search
+- Perplexity AI for enhanced responses
 
-Create a `.env` file in the root directory:
+### 🌍 Multi-Language Support
+- Support for multiple Indian languages
+- Voice-to-text capabilities
+- Localized agricultural terminology
+- Cultural context-aware recommendations
 
-```env
-# For Pest Detection and Weather Advisory
-api=your_google_ai_api_key_here
+## 🏗️ Architecture
 
-# For Market Price Analysis
-perplexity_api=your_perplexity_api_key_here
-```
+The project follows a modern microservices architecture with:
 
-**Get API Keys:**
-- Google AI: https://makersuite.google.com/app/apikey
-- Perplexity AI: https://www.perplexity.ai/settings/api
-
-### 2. Install Dependencies
-
-```bash
-# Install Python dependencies
-pip install fastapi uvicorn python-multipart openai python-dotenv openmeteo-requests geocoder requests-cache retry-requests geopy pandas
-
-# Install frontend dependencies
-cd frontend
-npm install
-```
-
-### 3. Start the Backend APIs
-
-**Pest Detection API (Port 8000):**
-```bash
-python start_backend.py
-```
-
-**Weather API (Port 8001):**
-```bash
-python start_weather_api.py
-```
-
-**Market API (Port 8002):**
-```bash
-python start_market_api.py
-```
-
-### 4. Start the Frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-## 🌐 API Endpoints
-
-### Pest Detection API (Port 8000)
-- `POST /detect-pest` - Detect pests from uploaded images
-- `GET /pesticides` - Get list of pesticides
-- `GET /health` - Health check
-
-### Weather API (Port 8001)
-- `POST /weather` - Get weather data and agricultural advisory
-- `GET /health` - Health check
-
-### Market API (Port 8002)
-- `POST /market-prices` - Get market price analysis
-- `GET /health` - Health check
-
-## 📱 Frontend Features
-
-### Dashboard
-- Navigation to all features
-- Status indicators
-- Modern card-based layout
-
-### Pest Detection
-- Image upload (camera/gallery)
-- AI-powered pest identification
-- Treatment and prevention recommendations
-- Pesticide suggestions
-
-### Weather Advisory
-- Real-time weather data
-- 7-day forecast
-- Agricultural recommendations
-- Location-based analysis
-
-### Market Prices
-- Location-based market analysis
-- Price trends and comparisons
-- Trading recommendations
-- Market status information
-
-### Fertilizer Plan
-- Crop-specific recommendations
-- Application timing
-- Dosage information
-- Soil health insights
-
-## 🔧 Technology Stack
-
-**Backend:**
-- FastAPI (Python)
-- OpenAI/Google AI APIs
-- Open-Meteo API
-- Geopy for geocoding
-- Pandas for data processing
-
-**Frontend:**
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- Radix UI Components
-- Axios for API calls
+- **Frontend**: React + TypeScript + Vite
+- **Backend APIs**: FastAPI (Python)
+- **AI Services**: Google Gemini, Perplexity AI
+- **Database**: Supabase (PostgreSQL + Vector Store)
+- **UI Components**: Radix UI + Tailwind CSS
 
 ## 📁 Project Structure
 
 ```
 KrishiVaani/
-├── frontend/                 # React frontend
+├── frontend/                 # React TypeScript frontend
 │   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── services/        # API services
+│   │   ├── components/       # UI components
+│   │   ├── services/         # API services
+│   │   ├── hooks/           # Custom React hooks
 │   │   └── styles/          # CSS styles
-│   └── package.json
-├── pest/                    # Pest image dataset
-├── api.py                   # Pest detection API
-├── weather_api.py           # Weather API
-├── market_api.py            # Market price API
-├── start_*.py              # Startup scripts
-├── requirements.txt         # Python dependencies
-└── README.md
+│   ├── package.json
+│   └── vite.config.ts
+├── backend/                  # FastAPI microservices
+│   ├── weather_api.py       # Weather advisory service
+│   ├── pest_api.py          # Pest detection service
+│   ├── market_api.py        # Market price service
+│   ├── ocr.py              # OCR service
+│   ├── requirements.txt
+│   └── Pesticides.csv      # Pest database
+├── localBackend/            # Local development services
+├── main.py                  # RAG chat API
+├── ingest.py               # Data ingestion script
+└── pest/                   # Pest image dataset
 ```
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling
+- **Radix UI** - Accessible UI components
+- **Axios** - HTTP client
+- **React Hook Form** - Form management
+
+### Backend
+- **FastAPI** - Web framework
+- **Python 3.8+** - Programming language
+- **Uvicorn** - ASGI server
+- **Pandas** - Data manipulation
+- **Pillow** - Image processing
+- **OpenAI** - AI client (Perplexity/Gemini)
+
+### AI & ML
+- **Google Gemini** - Embeddings and AI responses
+- **Perplexity AI** - Enhanced AI responses
+- **Supabase** - Vector database and storage
+- **Open-Meteo** - Weather data API
+
+### Development Tools
+- **Git** - Version control
+- **Python venv** - Virtual environment
+- **npm** - Package management
 
 ## 🚀 Quick Start
 
-1. **Clone and setup:**
+### Prerequisites
+- Python 3.8 or higher
+- Node.js 16 or higher
+- Git
+
+### Environment Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd KrishiVaani
+   ```
+
+2. **Set up Python environment**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -r backend/requirements.txt
+   ```
+
+3. **Set up frontend dependencies**
+   ```bash
+   cd frontend
+   npm install
+   cd ..
+   ```
+
+4. **Environment Variables**
+   Create a `.env` file in the root directory:
+   ```env
+   # Supabase Configuration
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_KEY=your_supabase_key
+   SUPABASE_TABLE=rag_documents
+
+   # AI API Keys
+   GEMINI_API_KEY=your_gemini_api_key
+   PERPLEXITY_API_KEY=your_perplexity_api_key
+
+   # Weather API
+   api=your_weather_api_key
+
+   # Optional: OCR API
+   OCR_API_KEY=your_ocr_api_key
+   ```
+
+### Running the Application
+
+1. **Start the RAG Chat API**
+   ```bash
+   python main.py
+   ```
+
+2. **Start Weather API**
+   ```bash
+   cd backend
+   python start_weather_api.py
+   ```
+
+3. **Start Pest Detection API**
+   ```bash
+   cd backend
+   python start_pest_api.py
+   ```
+
+4. **Start Market API**
+   ```bash
+   cd backend
+   python start_market_api.py
+   ```
+
+5. **Start Frontend Development Server**
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+The application will be available at `http://localhost:5173`
+
+## 📚 API Documentation
+
+### RAG Chat API (`main.py`)
+- **POST** `/chat` - Chat with AI assistant
+- **POST** `/stream-chat` - Streaming chat responses
+- **POST** `/ingest` - Ingest documents into vector store
+
+### Weather API (`weather_api.py`)
+- **GET** `/health` - Health check
+- **POST** `/weather` - Get weather data and advisory
+
+### Pest Detection API (`pest_api.py`)
+- **GET** `/health` - Health check
+- **POST** `/detect-pest` - Detect pests from image
+- **GET** `/pesticides` - Get pesticide information
+
+### Market API (`market_api.py`)
+- **GET** `/health` - Health check
+- **POST** `/market-prices` - Get market prices
+
+## 🔧 Development
+
+### Adding New Features
+1. Create new components in `frontend/src/components/`
+2. Add corresponding API endpoints in backend services
+3. Update routing in `App.tsx`
+4. Add translations for new features
+
+### Code Style
+- Frontend: ESLint + Prettier
+- Backend: Black + Flake8
+- TypeScript strict mode enabled
+- Python type hints required
+
+### Testing
 ```bash
-git clone <repository-url>
-cd KrishiVaani
+# Frontend tests
+cd frontend
+npm test
+
+# Backend tests
+cd backend
+python -m pytest
 ```
 
-2. **Create .env file with your API keys**
+## 🤝 Contributing
 
-3. **Install dependencies:**
-```bash
-pip install -r requirements.txt
-cd frontend && npm install
-```
-
-4. **Start all services:**
-```bash
-# Terminal 1 - Pest API
-python start_backend.py
-
-# Terminal 2 - Weather API  
-python start_weather_api.py
-
-# Terminal 3 - Market API
-python start_market_api.py
-
-# Terminal 4 - Frontend
-cd frontend && npm run dev
-```
-
-5. **Open browser:**
-- Frontend: http://localhost:3000
-- Pest API Docs: http://localhost:8000/docs
-- Weather API Docs: http://localhost:8001/docs
-- Market API Docs: http://localhost:8002/docs
-
-## 🔍 API Documentation
-
-Each API provides interactive documentation at `/docs` endpoint when running.
-
-### Example API Calls
-
-**Pest Detection:**
-```bash
-curl -X POST "http://localhost:8000/detect-pest" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@pest_image.jpg"
-```
-
-**Weather Data:**
-```bash
-curl -X POST "http://localhost:8001/weather" \
-  -H "Content-Type: application/json" \
-  -d '{"latitude": 27.5035, "longitude": 77.6722}'
-```
-
-**Market Prices:**
-```bash
-curl -X POST "http://localhost:8002/market-prices" \
-  -H "Content-Type: application/json" \
-  -d '{"latitude": 27.5035, "longitude": 77.6722}'
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Port already in use:**
-   - Check if other services are running on ports 8000, 8001, 8002
-   - Kill processes or change ports in startup scripts
-
-2. **API key errors:**
-   - Ensure `.env` file exists with correct API keys
-   - Check API key validity and quotas
-
-3. **Location access denied:**
-   - Enable location services in browser
-   - Allow location access when prompted
-
-4. **CORS errors:**
-   - APIs are configured to allow all origins for development
-   - Check if APIs are running on correct ports
-
-### Logs
-
-Check terminal outputs for detailed error messages and API logs.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is for educational and agricultural advisory purposes.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
->>>>>>> MandiAI
+## 🙏 Acknowledgments
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+- **Open-Meteo** for weather data
+- **Google Gemini** for AI capabilities
+- **Perplexity AI** for enhanced responses
+- **Supabase** for database and vector storage
+- **Radix UI** for accessible components
+- **Tailwind CSS** for styling
 
-<<<<<<< HEAD
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For support and questions, please open an issue on GitHub.
-=======
 ## 📞 Support
 
-For issues and questions, please check the troubleshooting section or create an issue in the repository.
->>>>>>> MandiAI
+For support and questions:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation in the `docs/` folder
 
+---
+
+**KrishiVaani** - Empowering farmers with AI-driven agricultural insights 🌾✨
