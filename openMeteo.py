@@ -12,16 +12,16 @@ load_dotenv()
 cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
 retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
 openmeteo = openmeteo_requests.Client(session = retry_session)
-g = geocoder.ip('me')
-lat, lon = g.latlng
+
 # Make sure all required weather variables are listed here
 # The order of variables in hourly or daily is important to assign them correctly below
 url = "https://api.open-meteo.com/v1/forecast"
 params = {
-	"latitude": lat,
-	"longitude": lon,
+	"latitude": 27.5035,
+	"longitude": 77.6722,
 	"daily": ["weather_code", "temperature_2m_max", "temperature_2m_min", "rain_sum", "showers_sum", "snowfall_sum", "uv_index_max", "sunshine_duration", "wind_speed_10m_max", "wind_gusts_10m_max"],
 	"hourly": ["temperature_2m", "rain", "snowfall", "cloud_cover", "wind_speed_10m", "soil_temperature_0cm", "soil_temperature_6cm", "soil_moisture_0_to_1cm", "soil_moisture_1_to_3cm", "weather_code", "surface_pressure", "relative_humidity_2m", "precipitation", "showers", "vapour_pressure_deficit", "soil_moisture_3_to_9cm", "soil_moisture_9_to_27cm", "soil_temperature_18cm"],
+	"current": ["temperature_2m", "relative_humidity_2m", "precipitation", "rain", "showers", "snowfall", "cloud_cover", "weather_code", "wind_speed_10m", "is_day", "apparent_temperature"],
 	"timezone": "auto",
 	"precipitation_unit": "inch",
 }
@@ -33,6 +33,33 @@ print(f"Coordinates: {response.Latitude()}°N {response.Longitude()}°E")
 print(f"Elevation: {response.Elevation()} m asl")
 print(f"Timezone: {response.Timezone()}{response.TimezoneAbbreviation()}")
 print(f"Timezone difference to GMT+0: {response.UtcOffsetSeconds()}s")
+
+# Process current data. The order of variables needs to be the same as requested.
+current = response.Current()
+current_temperature_2m = current.Variables(0).Value()
+current_relative_humidity_2m = current.Variables(1).Value()
+current_precipitation = current.Variables(2).Value()
+current_rain = current.Variables(3).Value()
+current_showers = current.Variables(4).Value()
+current_snowfall = current.Variables(5).Value()
+current_cloud_cover = current.Variables(6).Value()
+current_weather_code = current.Variables(7).Value()
+current_wind_speed_10m = current.Variables(8).Value()
+current_is_day = current.Variables(9).Value()
+current_apparent_temperature = current.Variables(10).Value()
+
+print(f"\nCurrent time: {current.Time()}")
+print(f"Current temperature_2m: {current_temperature_2m}")
+print(f"Current relative_humidity_2m: {current_relative_humidity_2m}")
+print(f"Current precipitation: {current_precipitation}")
+print(f"Current rain: {current_rain}")
+print(f"Current showers: {current_showers}")
+print(f"Current snowfall: {current_snowfall}")
+print(f"Current cloud_cover: {current_cloud_cover}")
+print(f"Current weather_code: {current_weather_code}")
+print(f"Current wind_speed_10m: {current_wind_speed_10m}")
+print(f"Current is_day: {current_is_day}")
+print(f"Current apparent_temperature: {current_apparent_temperature}")
 
 # Process hourly data. The order of variables needs to be the same as requested.
 hourly = response.Hourly()
@@ -118,10 +145,8 @@ daily_data["wind_gusts_10m_max"] = daily_wind_gusts_10m_max
 daily_dataframe = pd.DataFrame(data = daily_data)
 print("\nDaily data\n", daily_dataframe)
 
-crop = "okra"
-
 client = OpenAI(
-    api_key= "AIzaSyBcp40oWkENzGIzTI9VigKPQ5ewQU5p4rw",
+    api_key= getenv("api"),
     base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 # hourly_dataframe daily_dataframe
@@ -158,7 +183,7 @@ Provide clear, practical recommendations in bullet points for the farmer to foll
          },
          {
              "role" : "user",
-             "content":f"Hourly dataframe - {hourly_dataframe}\nDaily dataframe - {daily_dataframe}\ncrop - {crop}"
+             "content":f"Hourly dataframe - {hourly_dataframe}\nDaily dataframe - {daily_dataframe}"
          }
     ]
 )
