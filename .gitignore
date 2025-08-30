@@ -1,4 +1,4 @@
-frontend/
-.cache.sqlite
 pest/
 .env
+.cache.sqlite
+frontend/
