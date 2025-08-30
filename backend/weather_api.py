@@ -57,11 +57,30 @@ class LocationRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "KrishiVaani Weather API is running"}
+    return {
+        "service": "KrishiVaani Weather API",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "weather": "/weather"
+        }
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "openai_configured": client is not None}
+    return {
+        "api_status": {
+            "status": "healthy",
+            "service": "KrishiVaani Weather API",
+            "version": "1.0.0"
+        },
+        "services": {
+            "openai_configured": client is not None,
+            "weather_api_available": True,
+            "cache_enabled": True
+        }
+    }
 
 @app.post("/weather")
 async def get_weather_data(location: LocationRequest):
@@ -241,17 +260,35 @@ Output Format:
         weather_condition = get_weather_condition(current_data["weather_code"])
         
         result = {
-            "current": {
-                "temperature": current_data["temperature"],
-                "condition": weather_condition,
-                "humidity": current_data["humidity"],
-                "wind_speed": current_data["wind_speed"],
-                "visibility": "8 km",  # Default value
-                "rain_chance": f"{int(current_data['rain'] + current_data['showers'])}%"
+            "weather_data": {
+                "current": {
+                    "temperature": current_data["temperature"],
+                    "condition": weather_condition,
+                    "humidity": current_data["humidity"],
+                    "wind_speed": current_data["wind_speed"],
+                    "visibility": "8 km",
+                    "rain_chance": f"{int(current_data['rain'] + current_data['showers'])}%",
+                    "apparent_temperature": current_data["apparent_temperature"],
+                    "cloud_cover": current_data["cloud_cover"]
+                },
+                "forecast": forecast,
+                "location": {
+                    "coordinates": f"Lat: {location.latitude}, Long: {location.longitude}",
+                    "latitude": location.latitude,
+                    "longitude": location.longitude
+                }
             },
-            "forecast": forecast,
-            "advisory": advisory,
-            "location": f"Lat: {location.latitude}, Long: {location.longitude}"
+            "agricultural_advisory": {
+                "recommendations": advisory,
+                "ai_generated": client is not None,
+                "last_updated": "Current"
+            },
+            "data_quality": {
+                "source": "Open-Meteo API",
+                "forecast_days": 7,
+                "hourly_data_available": True,
+                "soil_data_available": True
+            }
         }
         
         return JSONResponse(content=result)

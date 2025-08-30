@@ -12,30 +12,38 @@ const api = axios.create({
 });
 
 export interface PestDetectionResult {
-  pestDetected: boolean;
-  pestName: string;
-  severity: string;
-  confidence: string;
-  confidenceBreakdown?: {
-    image_quality: string;
-    pest_name_match: string;
-    pesticide_availability: string;
-    response_consistency: string;
-  };
-  confidenceFactors?: {
-    image_size_adequate: boolean;
-    pest_in_database: boolean;
-    pesticides_available: boolean;
-    response_consistent: boolean;
+  pest_detection: {
+    detected: boolean;
+    pest_name: string;
+    severity: string;
+    confidence: string;
+    confidence_score: number;
+    confidence_breakdown: {
+      image_quality: string;
+      pest_name_match: string;
+      pesticide_availability: string;
+      response_consistency: string;
+    };
+    confidence_factors: {
+      image_size_adequate: boolean;
+      pest_in_database: boolean;
+      pesticides_available: boolean;
+      response_consistent: boolean;
+    };
   };
   treatment: {
-    hindi: string;
-    english: string;
+    recommendations: {
+      english: string;
+    };
+    pesticides: string[];
+    prevention: {
+      english: string;
+    };
   };
-  pesticides: string[];
-  prevention: {
-    hindi: string;
-    english: string;
+  analysis: {
+    image_processed: boolean;
+    ai_model_used: string;
+    processing_time: string;
   };
 }
 
@@ -73,22 +81,40 @@ export const pestDetectionAPI = {
 };
 
 export interface WeatherData {
-  current: {
-    temperature: number;
-    condition: string;
-    humidity: number;
-    wind_speed: number;
-    visibility: string;
-    rain_chance: string;
+  weather_data: {
+    current: {
+      temperature: number;
+      condition: string;
+      humidity: number;
+      wind_speed: number;
+      visibility: string;
+      rain_chance: string;
+      apparent_temperature: number;
+      cloud_cover: number;
+    };
+    forecast: Array<{
+      day: string;
+      temp: string;
+      rain: string;
+      weather_code: number;
+    }>;
+    location: {
+      coordinates: string;
+      latitude: number;
+      longitude: number;
+    };
   };
-  forecast: Array<{
-    day: string;
-    temp: string;
-    rain: string;
-    weather_code: number;
-  }>;
-  advisory: string;
-  location: string;
+  agricultural_advisory: {
+    recommendations: string;
+    ai_generated: boolean;
+    last_updated: string;
+  };
+  data_quality: {
+    source: string;
+    forecast_days: number;
+    hourly_data_available: boolean;
+    soil_data_available: boolean;
+  };
 }
 
 // Create separate axios instance for weather API
@@ -117,27 +143,39 @@ export const weatherAPI = {
 };
 
 export interface MarketData {
-  location: {
-    district: string;
-    state: string;
-    coordinates: string;
+  market_data: {
+    location: {
+      district: string;
+      state: string;
+      coordinates: string;
+      latitude: number;
+      longitude: number;
+    };
+    current_prices: Array<{
+      crop: string;
+      current_price: string;
+      yesterday_price: string;
+      trend: 'up' | 'down';
+      change: string;
+      unit: string;
+    }>;
+    nearby_mandis: Array<{
+      name: string;
+      distance: string;
+      status: string;
+      timing: string;
+    }>;
   };
-  current_prices: Array<{
-    crop: string;
-    current_price: string;
-    yesterday_price: string;
-    trend: 'up' | 'down';
-    change: string;
-    unit: string;
-  }>;
-  nearby_mandis: Array<{
-    name: string;
-    distance: string;
-    status: string;
-    timing: string;
-  }>;
-  recommendations: string;
-  last_updated: string;
+  recommendations: {
+    trading_advice: string;
+    ai_generated: boolean;
+    last_updated: string;
+  };
+  data_quality: {
+    source: string;
+    geocoding_used: boolean;
+    real_time_data: boolean;
+  };
 }
 
 // Create separate axios instance for market API

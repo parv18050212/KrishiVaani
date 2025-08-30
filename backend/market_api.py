@@ -53,11 +53,29 @@ class LocationRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "KrishiVaani Market API is running"}
+    return {
+        "service": "KrishiVaani Market API",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "market_prices": "/market-prices"
+        }
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "openai_configured": client is not None}
+    return {
+        "api_status": {
+            "status": "healthy",
+            "service": "KrishiVaani Market API",
+            "version": "1.0.0"
+        },
+        "services": {
+            "openai_configured": client is not None,
+            "geocoding_available": True
+        }
+    }
 
 @app.post("/market-prices")
 async def get_market_prices(location: LocationRequest):
@@ -127,89 +145,113 @@ async def get_market_prices(location: LocationRequest):
             
             # Create structured response for frontend
             result = {
-                "location": {
-                    "district": district,
-                    "state": state,
-                    "coordinates": f"Lat: {location.latitude}, Long: {location.longitude}"
+                "market_data": {
+                    "location": {
+                        "district": district,
+                        "state": state,
+                        "coordinates": f"Lat: {location.latitude}, Long: {location.longitude}",
+                        "latitude": location.latitude,
+                        "longitude": location.longitude
+                    },
+                    "current_prices": market_data.get("current_prices", []),
+                    "nearby_mandis": market_data.get("nearby_mandis", [])
                 },
-                "current_prices": market_data.get("current_prices", []),
-                "nearby_mandis": market_data.get("nearby_mandis", []),
-                "recommendations": market_data.get("recommendations", "Market data available."),
-                "last_updated": "Current"
+                "recommendations": {
+                    "trading_advice": market_data.get("recommendations", "Market data available."),
+                    "ai_generated": True,
+                    "last_updated": "Current"
+                },
+                "data_quality": {
+                    "source": "AI Analysis",
+                    "geocoding_used": True,
+                    "real_time_data": True
+                }
             }
         except json.JSONDecodeError:
             # Fallback if AI doesn't return valid JSON
             logger.warning("AI response not in JSON format, using fallback data")
             result = {
-                "location": {
-                    "district": district,
-                    "state": state,
-                    "coordinates": f"Lat: {location.latitude}, Long: {location.longitude}"
+                "market_data": {
+                    "location": {
+                        "district": district,
+                        "state": state,
+                        "coordinates": f"Lat: {location.latitude}, Long: {location.longitude}",
+                        "latitude": location.latitude,
+                        "longitude": location.longitude
+                    },
+                    "current_prices": [
+                        {
+                            "crop": "Wheat",
+                            "current_price": "2,150",
+                            "yesterday_price": "2,100",
+                            "trend": "up",
+                            "change": "+50",
+                            "unit": "per quintal"
+                        },
+                        {
+                            "crop": "Rice",
+                            "current_price": "1,950",
+                            "yesterday_price": "2,000",
+                            "trend": "down",
+                            "change": "-50",
+                            "unit": "per quintal"
+                        },
+                        {
+                            "crop": "Corn",
+                            "current_price": "1,750",
+                            "yesterday_price": "1,720",
+                            "trend": "up",
+                            "change": "+30",
+                            "unit": "per quintal"
+                        },
+                        {
+                            "crop": "Mustard",
+                            "current_price": "5,200",
+                            "yesterday_price": "5,180",
+                            "trend": "up",
+                            "change": "+20",
+                            "unit": "per quintal"
+                        },
+                        {
+                            "crop": "Chickpea",
+                            "current_price": "4,800",
+                            "yesterday_price": "4,850",
+                            "trend": "down",
+                            "change": "-50",
+                            "unit": "per quintal"
+                        }
+                    ],
+                    "nearby_mandis": [
+                        {
+                            "name": f"{district} Mandi",
+                            "distance": "2 km",
+                            "status": "Open",
+                            "timing": "6:00 AM - 12:00 PM"
+                        },
+                        {
+                            "name": "District Mandi",
+                            "distance": "15 km",
+                            "status": "Open",
+                            "timing": "5:00 AM - 1:00 PM"
+                        },
+                        {
+                            "name": "APMC Mandi",
+                            "distance": "25 km",
+                            "status": "Open",
+                            "timing": "24/7"
+                        }
+                    ]
                 },
-                "current_prices": [
-                    {
-                        "crop": "Wheat",
-                        "current_price": "2,150",
-                        "yesterday_price": "2,100",
-                        "trend": "up",
-                        "change": "+50",
-                        "unit": "per quintal"
-                    },
-                    {
-                        "crop": "Rice",
-                        "current_price": "1,950",
-                        "yesterday_price": "2,000",
-                        "trend": "down",
-                        "change": "-50",
-                        "unit": "per quintal"
-                    },
-                    {
-                        "crop": "Corn",
-                        "current_price": "1,750",
-                        "yesterday_price": "1,720",
-                        "trend": "up",
-                        "change": "+30",
-                        "unit": "per quintal"
-                    },
-                    {
-                        "crop": "Mustard",
-                        "current_price": "5,200",
-                        "yesterday_price": "5,180",
-                        "trend": "up",
-                        "change": "+20",
-                        "unit": "per quintal"
-                    },
-                    {
-                        "crop": "Chickpea",
-                        "current_price": "4,800",
-                        "yesterday_price": "4,850",
-                        "trend": "down",
-                        "change": "-50",
-                        "unit": "per quintal"
-                    }
-                ],
-                "nearby_mandis": [
-                    {
-                        "name": f"{district} Mandi",
-                        "distance": "2 km",
-                        "status": "Open",
-                        "timing": "6:00 AM - 12:00 PM"
-                    },
-                    {
-                        "name": "District Mandi",
-                        "distance": "15 km",
-                        "status": "Open",
-                        "timing": "5:00 AM - 1:00 PM"
-                    },
-                    {
-                        "name": "APMC Mandi",
-                        "distance": "25 km",
-                        "status": "Open",
-                        "timing": "24/7"
-                    }
-                ],
-                "recommendations": f"Market data for {district}, {state}. Check current prices above for trading decisions.",
-                "last_updated": "Current"
+                "recommendations": {
+                    "trading_advice": f"Market data for {district}, {state}. Check current prices above for trading decisions.",
+                    "ai_generated": False,
+                    "last_updated": "Current"
+                },
+                "data_quality": {
+                    "source": "Fallback Data",
+                    "geocoding_used": True,
+                    "real_time_data": False
+                }
             }
         
         return JSONResponse(content=result)

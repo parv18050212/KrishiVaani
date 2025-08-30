@@ -13,7 +13,8 @@ import {
   Thermometer,
   Eye,
   Loader2,
-  MapPin
+  MapPin,
+  Calendar
 } from 'lucide-react';
 import { weatherAPI, WeatherData } from '../services/api';
 
@@ -138,53 +139,80 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
       {/* Current Weather Card */}
       {weatherData && (
         <Card className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <CloudRain className="h-6 w-6" />
-              Current Weather
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CloudRain className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-bold text-blue-800">Current Weather</p>
+                  <p className="text-sm text-blue-700">{weatherData.weather_data.location.coordinates}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                  Live Data
+                </Badge>
+                <p className="text-xs text-blue-700 mt-1">
+                  Source: {weatherData.data_quality.source}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Current Weather Details */}
+      {weatherData && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Thermometer className="h-5 w-5" />
+              Current Conditions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center mb-4">
-              <p className="text-sm text-muted-foreground mb-1">{weatherData.location}</p>
+            <div className="text-center mb-6">
               <div className="text-4xl font-bold text-blue-800 mb-2">
-                {weatherData.current.temperature}°C
+                {weatherData.weather_data.current.temperature}°C
               </div>
-              <p className="text-lg font-medium text-blue-700">
-                {weatherData.current.condition}
+              <p className="text-lg font-medium text-blue-700 mb-1">
+                {weatherData.weather_data.current.condition}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Feels like {weatherData.weather_data.current.apparent_temperature}°C
               </p>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <Droplets className="h-5 w-5 text-blue-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Humidity</p>
-                  <p className="font-medium">{weatherData.current.humidity}%</p>
+                  <p className="font-medium">{weatherData.weather_data.current.humidity}%</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <Wind className="h-5 w-5 text-blue-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Wind</p>
-                  <p className="font-medium">{weatherData.current.wind_speed} km/h</p>
+                  <p className="font-medium">{weatherData.weather_data.current.wind_speed} km/h</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <CloudRain className="h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Rain</p>
-                  <p className="font-medium">{weatherData.current.rain_chance}</p>
+                  <p className="text-xs text-muted-foreground">Rain Chance</p>
+                  <p className="font-medium">{weatherData.weather_data.current.rain_chance}</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <Eye className="h-5 w-5 text-blue-500" />
                 <div>
                   <p className="text-xs text-muted-foreground">Visibility</p>
-                  <p className="font-medium">{weatherData.current.visibility}</p>
+                  <p className="font-medium">{weatherData.weather_data.current.visibility}</p>
                 </div>
               </div>
             </div>
@@ -196,18 +224,21 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
       {weatherData && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg">7-Day Forecast</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {weatherData.data_quality.forecast_days}-Day Forecast
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {weatherData.forecast.map((forecast, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-muted last:border-b-0">
+              {weatherData.weather_data.forecast.map((forecast, index) => (
+                <div key={index} className="flex items-center justify-between p-3 rounded-lg border border-muted">
                   <div className="flex items-center gap-3">
                     {getWeatherIcon(forecast.weather_code)}
                     <span className="font-medium">{forecast.day}</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm">{forecast.temp}</span>
+                    <span className="text-sm font-medium">{forecast.temp}</span>
                     <Badge variant="secondary" className="text-xs">
                       {forecast.rain}
                     </Badge>
@@ -219,20 +250,62 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
         </Card>
       )}
 
-            {/* Weather Advisory */}
+      {/* Agricultural Advisory */}
       {weatherData && (
         <Card className="mb-6 bg-green-50 border-green-200">
           <CardHeader>
             <CardTitle className="text-lg text-green-800 flex items-center gap-2">
               <Sun className="h-5 w-5" />
-              Farmer Advisory
+              Agricultural Advisory
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <p className="font-medium text-green-800">
-                {weatherData.advisory}
-              </p>
+              <div className="p-4 rounded-lg bg-green-100/50 border border-green-200">
+                <p className="font-medium text-green-800">
+                  {weatherData.agricultural_advisory.recommendations}
+                </p>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-green-700">
+                  {weatherData.agricultural_advisory.ai_generated ? 'AI Generated' : 'Standard Advisory'}
+                </span>
+                <span className="text-green-600">
+                  {weatherData.agricultural_advisory.last_updated}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Data Quality Info */}
+      {weatherData && (
+        <Card className="mb-6 bg-gray-50 border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Data Quality
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Data Source:</span>
+                <span className="text-sm font-medium">{weatherData.data_quality.source}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Forecast Days:</span>
+                <span className="text-sm font-medium">{weatherData.data_quality.forecast_days}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Hourly Data:</span>
+                <span className="text-sm font-medium">{weatherData.data_quality.hourly_data_available ? 'Available' : 'Not Available'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Soil Data:</span>
+                <span className="text-sm font-medium">{weatherData.data_quality.soil_data_available ? 'Available' : 'Not Available'}</span>
+              </div>
             </div>
           </CardContent>
         </Card>

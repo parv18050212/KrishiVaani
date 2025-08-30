@@ -204,11 +204,31 @@ confidence_calculator = ConfidenceCalculator(df)
 
 @app.get("/")
 async def root():
-    return {"message": "KrishiVaani Pest Detection API is running"}
+    return {
+        "service": "KrishiVaani Pest Detection API",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "detect_pest": "/detect-pest",
+            "pesticides": "/pesticides"
+        }
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "pesticides_loaded": len(df) > 0, "openai_configured": client is not None}
+    return {
+        "api_status": {
+            "status": "healthy",
+            "service": "KrishiVaani Pest Detection API",
+            "version": "1.0.0"
+        },
+        "services": {
+            "pesticides_loaded": len(df) > 0,
+            "openai_configured": client is not None,
+            "total_pests_available": len(df) if len(df) > 0 else 0
+        }
+    }
 
 @app.post("/detect-pest")
 async def detect_pest(file: UploadFile = File(...)):
@@ -317,18 +337,28 @@ async def detect_pest(file: UploadFile = File(...)):
         
         # Prepare response
         result = {
-            "pestDetected": True,
-            "pestName": pest_name,
-            "severity": severity,
-            "confidence": confidence_data['overall_confidence'],
-            "confidenceBreakdown": confidence_data['breakdown'],
-            "confidenceFactors": confidence_data['factors'],
-            "treatment": {
-                "english": treatment_info
+            "pest_detection": {
+                "detected": True,
+                "pest_name": pest_name,
+                "severity": severity,
+                "confidence": confidence_data['overall_confidence'],
+                "confidence_score": confidence_data['confidence_score'],
+                "confidence_breakdown": confidence_data['breakdown'],
+                "confidence_factors": confidence_data['factors']
             },
-            "pesticides": pesticides,
-            "prevention": {
-                "english": prevention_english
+            "treatment": {
+                "recommendations": {
+                    "english": treatment_info
+                },
+                "pesticides": pesticides,
+                "prevention": {
+                    "english": prevention_english
+                }
+            },
+            "analysis": {
+                "image_processed": True,
+                "ai_model_used": "sonar-pro",
+                "processing_time": "real-time"
             }
         }
         
@@ -345,10 +375,23 @@ async def get_pesticides():
     """
     try:
         if len(df) == 0:
-            return {"pesticides": []}
+            return {
+                "pesticides_data": {
+                    "total_pests": 0,
+                    "data_loaded": False,
+                    "pesticides": []
+                }
+            }
         
         pesticides_list = df.to_dict('records')
-        return {"pesticides": pesticides_list}
+        return {
+            "pesticides_data": {
+                "total_pests": len(pesticides_list),
+                "data_loaded": True,
+                "last_updated": "Current",
+                "pesticides": pesticides_list
+            }
+        }
     except Exception as e:
         logger.error(f"Error getting pesticides: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving pesticides data")

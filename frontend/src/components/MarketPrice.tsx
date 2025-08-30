@@ -12,7 +12,8 @@ import {
   Calendar,
   BarChart3,
   Store,
-  Loader2
+  Loader2,
+  Eye
 } from 'lucide-react';
 import { marketAPI, MarketData } from '../services/api';
 
@@ -130,8 +131,8 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5 text-yellow-600" />
                 <div>
-                  <p className="font-bold text-yellow-800">{marketData.location.district}</p>
-                  <p className="text-sm text-yellow-700">{marketData.location.state}</p>
+                  <p className="font-bold text-yellow-800">{marketData.market_data.location.district}</p>
+                  <p className="text-sm text-yellow-700">{marketData.market_data.location.state}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -139,7 +140,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
                   Market Open
                 </Badge>
                 <p className="text-xs text-yellow-700 mt-1">
-                  Today: {new Date().toLocaleDateString('en-US')}
+                  Source: {marketData.data_quality.source}
                 </p>
               </div>
             </div>
@@ -158,7 +159,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {marketData.current_prices.map((item, index) => (
+              {marketData.market_data.current_prices.map((item, index) => (
                 <div 
                   key={index}
                   className="flex items-center justify-between p-4 rounded-lg border border-muted"
@@ -212,7 +213,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {marketData.nearby_mandis.map((market, index) => (
+              {marketData.market_data.nearby_mandis.map((market, index) => (
                 <div 
                   key={index}
                   className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
@@ -252,9 +253,19 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <p className="font-medium text-blue-800">
-                {marketData.recommendations}
-              </p>
+              <div className="p-4 rounded-lg bg-blue-100/50 border border-blue-200">
+                <p className="font-medium text-blue-800">
+                  {marketData.recommendations.trading_advice}
+                </p>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-blue-700">
+                  {marketData.recommendations.ai_generated ? 'AI Generated' : 'Standard Advice'}
+                </span>
+                <span className="text-blue-600">
+                  {marketData.recommendations.last_updated}
+                </span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -271,7 +282,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {marketData.current_prices.slice(0, 3).map((item, index) => (
+              {marketData.market_data.current_prices.slice(0, 3).map((item, index) => (
                 <div key={index} className="flex justify-between items-center">
                   <span className="text-sm">{item.crop}</span>
                   <div className="flex items-center gap-1 text-green-600">
@@ -284,6 +295,34 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Data Quality Info */}
+      {marketData && (
+        <Card className="mb-6 bg-gray-50 border-gray-200">
+          <CardHeader>
+            <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Data Quality
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Data Source:</span>
+                <span className="text-sm font-medium">{marketData.data_quality.source}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Geocoding:</span>
+                <span className="text-sm font-medium">{marketData.data_quality.geocoding_used ? 'Used' : 'Not Used'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Real-time:</span>
+                <span className="text-sm font-medium">{marketData.data_quality.real_time_data ? 'Yes' : 'No'}</span>
+              </div>
             </div>
           </CardContent>
         </Card>

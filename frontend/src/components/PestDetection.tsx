@@ -193,138 +193,163 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
       {/* Analysis Results */}
       {analysisResult && (
         <>
-          <Card className="mb-6 bg-red-50 border-red-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-800">
-                <Bug className="h-6 w-6" />
-                Pest Identification
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+          {/* Pest Detection Info Card */}
+          <Card className="mb-6 bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bug className="h-5 w-5 text-red-600" />
                   <div>
-                    <p className="font-bold text-lg text-red-800">
-                      {analysisResult.pestName}
-                    </p>
-                    <p className="text-sm text-red-600">
-                      Confidence: {analysisResult.confidence}
-                    </p>
+                    <p className="font-bold text-red-800">{analysisResult.pest_detection.pest_name}</p>
+                    <p className="text-sm text-red-700">Confidence: {analysisResult.pest_detection.confidence}</p>
                   </div>
-                  <Badge 
-                    variant="destructive" 
-                    className="px-3 py-1"
-                  >
-                    {analysisResult.severity}
-                  </Badge>
                 </div>
-                
-                {/* Confidence Breakdown */}
-                {analysisResult.confidenceBreakdown && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm font-medium text-gray-700 mb-2">
-                      Confidence Breakdown:
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Image Quality:</span>
-                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.image_quality}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Pest Match:</span>
-                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.pest_name_match}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Pesticide Data:</span>
-                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.pesticide_availability}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Response Quality:</span>
-                        <span className="text-xs font-medium">{analysisResult.confidenceBreakdown.response_consistency}</span>
-                      </div>
-                    </div>
-                    
-                    {/* Confidence Factors */}
-                    {analysisResult.confidenceFactors && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs font-medium text-gray-700 mb-2">
-                          Quality Indicators:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {analysisResult.confidenceFactors.image_size_adequate && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              ✓ Good Image
-                            </Badge>
-                          )}
-                          {analysisResult.confidenceFactors.pest_in_database && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              ✓ Known Pest
-                            </Badge>
-                          )}
-                          {analysisResult.confidenceFactors.pesticides_available && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              ✓ Treatment Available
-                            </Badge>
-                          )}
-                          {analysisResult.confidenceFactors.response_consistent && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              ✓ Reliable Analysis
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {analysisResult.severity === 'High' && (
-                  <div className="flex items-center gap-2 p-3 bg-red-100 rounded-lg">
-                    <AlertTriangle className="h-5 w-5 text-red-600" />
-                    <p className="text-sm text-red-800 font-medium">
-                      Immediate treatment needed
-                    </p>
-                  </div>
-                )}
-                {analysisResult.severity === 'Medium' && (
-                  <div className="flex items-center gap-2 p-3 bg-yellow-100 rounded-lg">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                    <p className="text-sm text-yellow-800 font-medium">
-                      Treatment recommended
-                    </p>
-                  </div>
-                )}
-                {analysisResult.severity === 'Low' && (
-                  <div className="flex items-center gap-2 p-3 bg-green-100 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <p className="text-sm text-green-800 font-medium">
-                      Minimal threat - monitor closely
-                    </p>
-                  </div>
-                )}
+                <div className="text-right">
+                  <Badge className="bg-red-100 text-red-800 border-red-300">
+                    {analysisResult.pest_detection.severity}
+                  </Badge>
+                  <p className="text-xs text-red-700 mt-1">
+                    AI Model: {analysisResult.analysis.ai_model_used}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Treatment Card */}
-          <Card className="mb-6 bg-blue-50 border-blue-200">
+          {/* Confidence Analysis */}
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-lg text-blue-800 flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Treatment
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Analysis Confidence
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                <p className="font-medium text-blue-800">
-                  {analysisResult.treatment.english}
-                </p>
+              <div className="space-y-4">
+                {/* Overall Confidence */}
+                <div className="flex items-center justify-between p-4 rounded-lg border border-muted">
+                  <div>
+                    <p className="font-bold text-lg">Overall Confidence</p>
+                    <p className="text-sm text-muted-foreground">AI Analysis Score</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-xl text-blue-600">
+                      {analysisResult.pest_detection.confidence_score}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {analysisResult.pest_detection.confidence}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Confidence Breakdown */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Image Quality:</span>
+                    <span className="text-sm font-medium">{analysisResult.pest_detection.confidence_breakdown.image_quality}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Pest Match:</span>
+                    <span className="text-sm font-medium">{analysisResult.pest_detection.confidence_breakdown.pest_name_match}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Pesticide Data:</span>
+                    <span className="text-sm font-medium">{analysisResult.pest_detection.confidence_breakdown.pesticide_availability}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">Response Quality:</span>
+                    <span className="text-sm font-medium">{analysisResult.pest_detection.confidence_breakdown.response_consistency}</span>
+                  </div>
+                </div>
+
+                {/* Quality Indicators */}
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-muted">
+                  {analysisResult.pest_detection.confidence_factors.image_size_adequate && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      ✓ Good Image
+                    </Badge>
+                  )}
+                  {analysisResult.pest_detection.confidence_factors.pest_in_database && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      ✓ Known Pest
+                    </Badge>
+                  )}
+                  {analysisResult.pest_detection.confidence_factors.pesticides_available && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      ✓ Treatment Available
+                    </Badge>
+                  )}
+                  {analysisResult.pest_detection.confidence_factors.response_consistent && (
+                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                      ✓ Reliable Analysis
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Severity Alert */}
+          {analysisResult.pest_detection.severity === 'High' && (
+            <Card className="mb-6 bg-red-50 border-red-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                  <p className="text-sm text-red-800 font-medium">
+                    Immediate treatment needed - High severity pest detected
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {analysisResult.pest_detection.severity === 'Medium' && (
+            <Card className="mb-6 bg-yellow-50 border-yellow-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  <p className="text-sm text-yellow-800 font-medium">
+                    Treatment recommended - Monitor closely
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {analysisResult.pest_detection.severity === 'Low' && (
+            <Card className="mb-6 bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <p className="text-sm text-green-800 font-medium">
+                    Minimal threat - Continue monitoring
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Treatment Recommendations */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                Treatment Recommendations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg border border-muted">
+                  <p className="font-medium text-blue-800">
+                    {analysisResult.treatment.recommendations.english}
+                  </p>
+                </div>
                 
-                {analysisResult.pesticides && analysisResult.pesticides.length > 0 && (
+                {analysisResult.treatment.pesticides && analysisResult.treatment.pesticides.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-blue-800 mb-2">
                       Recommended Pesticides:
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {analysisResult.pesticides.map((pesticide, index) => (
+                      {analysisResult.treatment.pesticides.map((pesticide, index) => (
                         <Badge key={index} variant="secondary" className="bg-blue-100 text-blue-800">
                           {pesticide}
                         </Badge>
@@ -336,19 +361,45 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
             </CardContent>
           </Card>
 
-          {/* Prevention Card */}
+          {/* Prevention Tips */}
           <Card className="mb-6 bg-green-50 border-green-200">
             <CardHeader>
               <CardTitle className="text-lg text-green-800 flex items-center gap-2">
                 <Leaf className="h-5 w-5" />
-                Prevention
+                Prevention Tips
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <p className="font-medium text-green-800">
-                  {analysisResult.prevention.english}
+                  {analysisResult.treatment.prevention.english}
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Analysis Info */}
+          <Card className="mb-6 bg-gray-50 border-gray-200">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Analysis Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Processing Time:</span>
+                  <span className="text-sm font-medium">{analysisResult.analysis.processing_time}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">AI Model:</span>
+                  <span className="text-sm font-medium">{analysisResult.analysis.ai_model_used}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Image Processed:</span>
+                  <span className="text-sm font-medium">{analysisResult.analysis.image_processed ? 'Yes' : 'No'}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
