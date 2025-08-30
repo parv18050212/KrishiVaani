@@ -2,7 +2,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import base64
-import json
 import pandas as pd
 
 df = pd.read_csv("Pesticides.csv")

@@ -3,3 +3,5 @@ Pest/
 Pesticide_Dataset/
 openMeteo.py
 openWeather.py
+frontend/
+.cache.sqlite
