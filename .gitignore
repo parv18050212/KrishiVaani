@@ -1,4 +1,12 @@
-<<<<<<< HEAD
+.env
+Pest/
+Pesticide_Dataset/
+openMeteo.py
+openWeather.py
+.cache.sqlite
+__pycache__/
+localBackend/
+frontend/node_modules/
 Pest/
 Pesticide_Dataset/
 openMeteo.py
@@ -7,8 +15,6 @@ frontend/
 __pycache__/
 .cache.sqlite
 .env
-=======
 .venv
 /_pycache__
 /content
->>>>>>> b0646c385eec7e6d40eb8ba41decde0b053e0040
