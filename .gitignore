@@ -5,3 +5,4 @@ openMeteo.py
 openWeather.py
 frontend/
 .cache.sqlite
+__pycache__/
