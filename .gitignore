@@ -1,3 +1,4 @@
 pest/
 .env
 .cache.sqlite
+frontend/
