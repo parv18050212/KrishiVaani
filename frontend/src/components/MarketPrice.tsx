@@ -16,16 +16,19 @@ import {
   Eye
 } from 'lucide-react';
 import { marketAPI, MarketData } from '../services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface MarketPriceProps {
   onBack: () => void;
+  selectedLanguage: string;
 }
 
-const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
+const MarketPrice: React.FC<MarketPriceProps> = ({ onBack, selectedLanguage }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [marketData, setMarketData] = useState<MarketData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleVoiceOutput = () => {
     setIsPlaying(!isPlaying);
@@ -57,13 +60,13 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
       } catch (err: any) {
         console.error('Error fetching market data:', err);
         if (err.code === 1) {
-          setError('Location access denied. Please enable location services.');
+          setError(t('error.locationDenied'));
         } else if (err.code === 2) {
-          setError('Location unavailable. Please check your connection.');
+          setError(t('error.locationUnavailable'));
         } else if (err.code === 3) {
-          setError('Location request timed out. Please try again.');
+          setError(t('error.locationTimeout'));
         } else {
-          setError('Failed to fetch market data. Please try again.');
+          setError(t('error.failedToFetch'));
         }
       } finally {
         setIsLoading(false);
@@ -71,7 +74,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
     };
 
     fetchMarketData();
-  }, []);
+  }, [t]);
 
   return (
     <div className="min-h-screen bg-background p-4 max-w-md mx-auto">
@@ -87,7 +90,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
         </Button>
         
         <h1 className="text-xl font-bold text-primary">
-          Market Prices
+          {t('market.title')}
         </h1>
         
         <Button
@@ -140,7 +143,7 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
                   Market Open
                 </Badge>
                 <p className="text-xs text-yellow-700 mt-1">
-                  Source: {marketData.data_quality.source}
+                  {t('weather.dataSource')}: {marketData.data_quality.source}
                 </p>
               </div>
             </div>
@@ -306,13 +309,13 @@ const MarketPrice: React.FC<MarketPriceProps> = ({ onBack }) => {
           <CardHeader>
             <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Data Quality
+              {t('weather.dataQuality')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Data Source:</span>
+                <span className="text-sm text-gray-600">{t('weather.dataSource')}:</span>
                 <span className="text-sm font-medium">{marketData.data_quality.source}</span>
               </div>
               <div className="flex justify-between items-center">

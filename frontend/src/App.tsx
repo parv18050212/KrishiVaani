@@ -4,9 +4,12 @@ import WeatherAdvisory from './components/WeatherAdvisory';
 import PestDetection from './components/PestDetection';
 import FertilizerPlan from './components/FertilizerPlan';
 import MarketPrice from './components/MarketPrice';
+import { useTranslation } from './hooks/useTranslation';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<string>('dashboard');
+  const { setLanguage, getCurrentLanguage } = useTranslation();
+  const [selectedLanguage, setSelectedLanguage] = useState(getCurrentLanguage());
 
   const handleFeatureSelect = (feature: string) => {
     setCurrentScreen(feature);
@@ -16,19 +19,24 @@ export default function App() {
     setCurrentScreen('dashboard');
   };
 
+  const handleLanguageChange = (languageCode: string) => {
+    setSelectedLanguage(languageCode);
+    setLanguage(languageCode);
+  };
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'weather':
-        return <WeatherAdvisory onBack={handleBackToDashboard} />;
+        return <WeatherAdvisory onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
       case 'pest':
-        return <PestDetection onBack={handleBackToDashboard} />;
+        return <PestDetection onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
       case 'fertilizer':
-        return <FertilizerPlan onBack={handleBackToDashboard} />;
+        return <FertilizerPlan onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
       case 'market':
-        return <MarketPrice onBack={handleBackToDashboard} />;
+        return <MarketPrice onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
       case 'dashboard':
       default:
-        return <Dashboard onFeatureSelect={handleFeatureSelect} />;
+        return <Dashboard onFeatureSelect={handleFeatureSelect} onLanguageChange={handleLanguageChange} selectedLanguage={selectedLanguage} />;
     }
   };
 

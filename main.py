@@ -261,6 +261,121 @@ async def simple_chat(query: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
+@app.post("/chat/speech")
+async def speech_chat(request: ChatRequest):
+    """Specialized endpoint for speech-to-text queries with enhanced context."""
+    
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    
+    sources = []
+    context_blocks = []
+    has_context = False
+    
+    # Enhanced RAG search for speech queries
+    try:
+        # Generate query embedding
+        query_embedding = embed_query(request.query)
+        
+        # Search for relevant documents with higher top_k for speech queries
+        matches = similarity_search(
+            query_embedding, 
+            top_k=6,  # Higher context for speech queries
+            metadata_filter=request.metadata_filter
+        )
+        
+        if matches:
+            has_context = True
+            # Process search results
+            for match in matches:
+                sources.append({
+                    "id": match["id"],
+                    "metadata": match.get("metadata", {}),
+                    "similarity_score": match.get("distance", 0),
+                    "preview": match["document_text"][:200] + "..." if len(match["document_text"]) > 200 else match["document_text"]
+                })
+                
+                # Prepare context block (limit length for token efficiency)
+                block = match["document_text"]
+                if len(block) > 1200:  # Slightly shorter for speech responses
+                    block = block[:1200] + "..."
+                context_blocks.append(block)
+    
+    except Exception as e:
+        # Log error but continue without context
+        print(f"RAG search error: {e}")
+    
+    # Generate response with speech-optimized prompt
+    try:
+        # Enhanced system prompt for speech queries
+        speech_system_prompt = (
+            "You are KrishiVaani, an expert agricultural assistant for Indian farmers. "
+            "This is a voice query, so provide clear, concise, and actionable responses "
+            "that are easy to understand when spoken aloud.\n\n"
+            "Guidelines:\n"
+            "- Use ONLY the provided context when available\n"
+            "- Keep responses concise but informative (2-3 sentences)\n"
+            "- Use simple, clear language suitable for voice communication\n"
+            "- Provide practical, actionable advice\n"
+            "- Use local units (kg/acre, ml/liter, etc.)\n"
+            "- Consider Indian farming conditions\n"
+            "- If information is not in context, clearly state limitations\n"
+            "- Use simple Hindi/English terms that farmers understand"
+        )
+        
+        # Build user message with context and history
+        user_parts = []
+        
+        # Add chat history if available
+        if request.chat_history:
+            history_text = format_chat_history(request.chat_history)
+            if history_text:
+                user_parts.append(f"Previous conversation:\n{history_text}\n")
+        
+        # Add context if available
+        if context_blocks:
+            context_text = "\n\n".join([f"[Context {i+1}]\n{c}" for i, c in enumerate(context_blocks)])
+            user_parts.append(f"Relevant information from knowledge base:\n{context_text}\n")
+        
+        # Add current question
+        user_parts.append(f"Voice question: {request.query}\n\nPlease provide a helpful response:")
+        
+        user_message = "\n".join(user_parts)
+
+        headers = {
+            "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        
+        payload = {
+            "model": PERPLEXITY_MODEL,
+            "messages": [
+                {"role": "system", "content": speech_system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 600,  # Shorter for voice responses
+        }
+        
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                "https://api.perplexity.ai/chat/completions", 
+                headers=headers, 
+                json=payload
+            )
+            response.raise_for_status()
+            data = response.json()
+            answer = data["choices"][0]["message"]["content"]
+        
+        return ChatResponse(
+            answer=answer,
+            sources=sources,
+            has_context=has_context
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Speech response generation error: {str(e)}")
+
 @app.get("/chat/models")
 def get_available_models():
     """Get information about available models and configuration."""

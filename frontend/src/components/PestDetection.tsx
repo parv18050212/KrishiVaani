@@ -15,12 +15,14 @@ import {
   Loader2
 } from 'lucide-react';
 import { pestDetectionAPI, PestDetectionResult } from '../services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface PestDetectionProps {
   onBack: () => void;
+  selectedLanguage: string;
 }
 
-const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
+const PestDetection: React.FC<PestDetectionProps> = ({ onBack, selectedLanguage }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasImage, setHasImage] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<PestDetectionResult | null>(null);
@@ -28,6 +30,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const handleVoiceOutput = () => {
     setIsPlaying(!isPlaying);
@@ -69,7 +72,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
       console.error('Error analyzing image:', err);
       console.error('Error response:', err.response);
       console.error('Error data:', err.response?.data);
-      setError(err.response?.data?.detail || 'Error analyzing image. Please try again.');
+      setError(err.response?.data?.detail || t('error.analyzingImage'));
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +92,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
         </Button>
         
         <h1 className="text-xl font-bold text-primary">
-          Pest Detection
+          {t('pest.title')}
         </h1>
         
         <Button
@@ -132,10 +135,10 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
                 <Camera className="h-10 w-10 text-green-600" />
               </div>
               <h3 className="text-lg font-bold text-green-800 mb-2">
-                Take Photo of Leaf or Crop
+                {t('pest.takePhoto')}
               </h3>
               <p className="text-green-700 mb-4">
-                Upload an image to detect pests
+                {t('pest.uploadImage')}
               </p>
             </div>
             
@@ -145,7 +148,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
                 className="w-full h-12 text-lg bg-green-600 hover:bg-green-700"
               >
                 <Camera className="h-5 w-5 mr-2" />
-                Open Camera
+                {t('pest.takePhoto')}
               </Button>
               
               <Button 
@@ -154,7 +157,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
                 className="w-full h-12 text-lg border-green-300"
               >
                 <Upload className="h-5 w-5 mr-2" />
-                Choose from Gallery
+                {t('pest.chooseFromGallery')}
               </Button>
             </div>
           </CardContent>
@@ -176,7 +179,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
               <div className="text-center py-8">
                 <Loader2 className="h-12 w-12 mx-auto text-green-600 mb-4 animate-spin" />
                 <p className="text-sm text-muted-foreground">
-                  Analyzing...
+                  {t('pest.analyzing')}
                 </p>
                 <div className="mt-4 space-y-2">
                   <div className="animate-pulse">
@@ -201,7 +204,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
                   <Bug className="h-5 w-5 text-red-600" />
                   <div>
                     <p className="font-bold text-red-800">{analysisResult.pest_detection.pest_name}</p>
-                    <p className="text-sm text-red-700">Confidence: {analysisResult.pest_detection.confidence}</p>
+                    <p className="text-sm text-red-700">{t('pest.confidence')}: {analysisResult.pest_detection.confidence}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -221,7 +224,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Eye className="h-5 w-5" />
-                Analysis Confidence
+                {t('pest.detectionResult')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -229,7 +232,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
                 {/* Overall Confidence */}
                 <div className="flex items-center justify-between p-4 rounded-lg border border-muted">
                   <div>
-                    <p className="font-bold text-lg">Overall Confidence</p>
+                    <p className="font-bold text-lg">{t('pest.confidence')}</p>
                     <p className="text-sm text-muted-foreground">AI Analysis Score</p>
                   </div>
                   <div className="text-right">
@@ -332,7 +335,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5" />
-                Treatment Recommendations
+                {t('pest.treatment')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -366,7 +369,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
             <CardHeader>
               <CardTitle className="text-lg text-green-800 flex items-center gap-2">
                 <Leaf className="h-5 w-5" />
-                Prevention Tips
+                {t('pest.prevention')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -442,7 +445,7 @@ const PestDetection: React.FC<PestDetectionProps> = ({ onBack }) => {
           className="w-full h-12"
           onClick={onBack}
         >
-                      Go Back
+          Go Back
         </Button>
       </div>
     </div>

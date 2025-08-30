@@ -14,14 +14,17 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface FertilizerPlanProps {
   onBack: () => void;
+  selectedLanguage: string;
 }
 
-const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
+const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack, selectedLanguage }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState('wheat');
+  const { t } = useTranslation();
 
   const handleVoiceOutput = () => {
     setIsPlaying(!isPlaying);
@@ -89,7 +92,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
         </Button>
         
         <h1 className="text-xl font-bold text-primary">
-          Fertilizer Plan
+          {t('fertilizer.title')}
         </h1>
         
         <Button
@@ -107,7 +110,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-green-800">
             <Leaf className="h-6 w-6" />
-            फसल की स्थिति
+            Crop Status
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -123,7 +126,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
             
             <div>
               <div className="flex justify-between text-sm mb-2">
-                <span>फसल की प्रगति / Crop Progress</span>
+                <span>Crop Progress</span>
                 <span>{cropData.wheat.progress}%</span>
               </div>
               <Progress value={cropData.wheat.progress} className="h-2" />
@@ -133,7 +136,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
               <Clock className="h-5 w-5 text-green-700" />
               <div>
                 <p className="text-sm font-medium text-green-800">
-                  अगली खाद
+                  Next Fertilizer
                 </p>
                 <p className="text-xs text-green-700">
                   {cropData.wheat.nextFertilizer}
@@ -149,7 +152,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            वर्तमान खाद योजना
+            Current Fertilizer Plan
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -184,8 +187,8 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
                     }
                     className="text-xs"
                   >
-                    {item.priority === 'high' ? 'जरुरी' : 
-                     item.priority === 'medium' ? 'मध्यम' : 'बाद में'}
+                    {item.priority === 'high' ? 'High Priority' : 
+                     item.priority === 'medium' ? 'Medium Priority' : 'Low Priority'}
                   </Badge>
                 </div>
                 
@@ -204,7 +207,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
                   <div className="flex items-center gap-2 mt-3 p-2 bg-red-100 rounded">
                     <AlertCircle className="h-4 w-4 text-red-600" />
                     <p className="text-xs text-red-800 font-medium">
-                      तुरंत प्रयोग करें / Apply immediately
+                      Apply immediately
                     </p>
                   </div>
                 )}
@@ -219,7 +222,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            मिट्टी का स्वास्थ्य
+            Soil Health
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -228,9 +231,9 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
               <div key={nutrient} className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="capitalize">
-                    {nutrient === 'nitrogen' ? 'नाइट्रोजन' :
-                     nutrient === 'phosphorus' ? 'फास्फोरस' :
-                     nutrient === 'potassium' ? 'पोटेशियम' : 'pH स्तर'}
+                    {nutrient === 'nitrogen' ? 'Nitrogen' :
+                     nutrient === 'phosphorus' ? 'Phosphorus' :
+                     nutrient === 'potassium' ? 'Potassium' : 'pH Level'}
                   </span>
                   <span className="font-medium">{data.level}</span>
                 </div>
@@ -253,15 +256,12 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
         <CardHeader>
           <CardTitle className="text-lg text-blue-800 flex items-center gap-2">
             <Package className="h-5 w-5" />
-            सिफारिश / Recommendation
+            Recommendations
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <p className="font-medium text-blue-800">
-              {recommendations.hindi}
-            </p>
-            <p className="text-sm text-blue-700">
               {recommendations.english}
             </p>
           </div>
@@ -275,7 +275,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
           onClick={handleVoiceOutput}
         >
           <Volume2 className="h-5 w-5 mr-2" />
-          योजना सुनें / Listen to Plan
+          Listen to Plan
         </Button>
         
         <Button 
@@ -283,7 +283,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack }) => {
           className="w-full h-12"
           onClick={onBack}
         >
-          वापस जाएं / Go Back
+          Go Back
         </Button>
       </div>
     </div>

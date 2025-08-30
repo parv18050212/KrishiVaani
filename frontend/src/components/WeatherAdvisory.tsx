@@ -17,17 +17,20 @@ import {
   Calendar
 } from 'lucide-react';
 import { weatherAPI, WeatherData } from '../services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface WeatherAdvisoryProps {
   onBack: () => void;
+  selectedLanguage: string;
 }
 
-const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
+const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack, selectedLanguage }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<string>('Getting location...');
+  const { t } = useTranslation();
 
   const handleVoiceOutput = () => {
     setIsPlaying(!isPlaying);
@@ -60,13 +63,13 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
       } catch (err: any) {
         console.error('Error fetching weather data:', err);
         if (err.code === 1) {
-          setError('Location access denied. Please enable location services.');
+          setError(t('error.locationDenied'));
         } else if (err.code === 2) {
-          setError('Location unavailable. Please check your connection.');
+          setError(t('error.locationUnavailable'));
         } else if (err.code === 3) {
-          setError('Location request timed out. Please try again.');
+          setError(t('error.locationTimeout'));
         } else {
-          setError('Failed to fetch weather data. Please try again.');
+          setError(t('error.failedToFetch'));
         }
       } finally {
         setIsLoading(false);
@@ -74,7 +77,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
     };
 
     fetchWeatherData();
-  }, []);
+  }, [t]);
 
   // Helper function to get weather icon based on weather code
   const getWeatherIcon = (weatherCode: number) => {
@@ -100,7 +103,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
         </Button>
         
         <h1 className="text-xl font-bold text-primary">
-          Weather Advisory
+          {t('weather.title')}
         </h1>
         
         <Button
@@ -118,7 +121,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
         <Card className="mb-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardContent className="p-8 text-center">
             <Loader2 className="h-12 w-12 mx-auto text-blue-600 mb-4 animate-spin" />
-            <p className="text-blue-800 font-medium mb-2">Getting Weather Data</p>
+            <p className="text-blue-800 font-medium mb-2">{t('weather.gettingData')}</p>
             <p className="text-sm text-blue-600">{userLocation}</p>
           </CardContent>
         </Card>
@@ -144,16 +147,16 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
               <div className="flex items-center gap-2">
                 <CloudRain className="h-5 w-5 text-blue-600" />
                 <div>
-                  <p className="font-bold text-blue-800">Current Weather</p>
+                  <p className="font-bold text-blue-800">{t('weather.currentWeather')}</p>
                   <p className="text-sm text-blue-700">{weatherData.weather_data.location.coordinates}</p>
                 </div>
               </div>
               <div className="text-right">
                 <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                  Live Data
+                  {t('weather.liveData')}
                 </Badge>
                 <p className="text-xs text-blue-700 mt-1">
-                  Source: {weatherData.data_quality.source}
+                  {t('weather.dataSource')}: {weatherData.data_quality.source}
                 </p>
               </div>
             </div>
@@ -167,7 +170,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Thermometer className="h-5 w-5" />
-              Current Conditions
+              {t('weather.currentConditions')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -179,7 +182,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
                 {weatherData.weather_data.current.condition}
               </p>
               <p className="text-sm text-muted-foreground">
-                Feels like {weatherData.weather_data.current.apparent_temperature}°C
+                {t('weather.feelsLike')} {weatherData.weather_data.current.apparent_temperature}°C
               </p>
             </div>
             
@@ -187,7 +190,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
               <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <Droplets className="h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Humidity</p>
+                  <p className="text-xs text-muted-foreground">{t('weather.humidity')}</p>
                   <p className="font-medium">{weatherData.weather_data.current.humidity}%</p>
                 </div>
               </div>
@@ -195,7 +198,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
               <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <Wind className="h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Wind</p>
+                  <p className="text-xs text-muted-foreground">{t('weather.wind')}</p>
                   <p className="font-medium">{weatherData.weather_data.current.wind_speed} km/h</p>
                 </div>
               </div>
@@ -203,7 +206,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
               <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <CloudRain className="h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Rain Chance</p>
+                  <p className="text-xs text-muted-foreground">{t('weather.rainChance')}</p>
                   <p className="font-medium">{weatherData.weather_data.current.rain_chance}</p>
                 </div>
               </div>
@@ -211,7 +214,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
               <div className="flex items-center gap-2 p-3 rounded-lg border border-muted">
                 <Eye className="h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Visibility</p>
+                  <p className="text-xs text-muted-foreground">{t('weather.visibility')}</p>
                   <p className="font-medium">{weatherData.weather_data.current.visibility}</p>
                 </div>
               </div>
@@ -226,7 +229,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              {weatherData.data_quality.forecast_days}-Day Forecast
+              {weatherData.data_quality.forecast_days}-{t('weather.dayForecast')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -256,7 +259,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
           <CardHeader>
             <CardTitle className="text-lg text-green-800 flex items-center gap-2">
               <Sun className="h-5 w-5" />
-              Agricultural Advisory
+              {t('weather.agriculturalAdvisory')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -268,7 +271,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-green-700">
-                  {weatherData.agricultural_advisory.ai_generated ? 'AI Generated' : 'Standard Advisory'}
+                  {weatherData.agricultural_advisory.ai_generated ? t('weather.aiGenerated') : t('weather.standardAdvisory')}
                 </span>
                 <span className="text-green-600">
                   {weatherData.agricultural_advisory.last_updated}
@@ -285,26 +288,26 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
           <CardHeader>
             <CardTitle className="text-lg text-gray-800 flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Data Quality
+              {t('weather.dataQuality')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Data Source:</span>
+                <span className="text-sm text-gray-600">{t('weather.dataSource')}:</span>
                 <span className="text-sm font-medium">{weatherData.data_quality.source}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Forecast Days:</span>
+                <span className="text-sm text-gray-600">{t('weather.forecastDays')}:</span>
                 <span className="text-sm font-medium">{weatherData.data_quality.forecast_days}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Hourly Data:</span>
-                <span className="text-sm font-medium">{weatherData.data_quality.hourly_data_available ? 'Available' : 'Not Available'}</span>
+                <span className="text-sm text-gray-600">{t('weather.hourlyData')}:</span>
+                <span className="text-sm font-medium">{weatherData.data_quality.hourly_data_available ? t('weather.available') : t('weather.notAvailable')}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Soil Data:</span>
-                <span className="text-sm font-medium">{weatherData.data_quality.soil_data_available ? 'Available' : 'Not Available'}</span>
+                <span className="text-sm text-gray-600">{t('weather.soilData')}:</span>
+                <span className="text-sm font-medium">{weatherData.data_quality.soil_data_available ? t('weather.available') : t('weather.notAvailable')}</span>
               </div>
             </div>
           </CardContent>
@@ -319,7 +322,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
             onClick={handleVoiceOutput}
           >
             <Volume2 className="h-5 w-5 mr-2" />
-            Listen to Advisory
+            {t('weather.listenToAdvisory')}
           </Button>
         )}
         
@@ -328,7 +331,7 @@ const WeatherAdvisory: React.FC<WeatherAdvisoryProps> = ({ onBack }) => {
           className="w-full h-12"
           onClick={onBack}
         >
-          Go Back
+          {t('weather.goBack')}
         </Button>
       </div>
     </div>
