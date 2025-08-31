@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000';
-const WEATHER_API_BASE_URL = 'http://localhost:8001';
-const MARKET_API_BASE_URL = 'http://localhost:8002';
-const OCR_API_BASE_URL = 'http://localhost:8003';
+const API_BASE_URL = 'http://43.204.140.241:8000';
+const WEATHER_API_BASE_URL = 'http://43.204.140.241:8001';
+const MARKET_API_BASE_URL = 'http://43.204.140.241:8002';
+const OCR_API_BASE_URL = 'http://43.204.140.241:8003';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
