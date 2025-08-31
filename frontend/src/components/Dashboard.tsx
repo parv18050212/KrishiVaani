@@ -123,7 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onFeatureSelect, onLanguageChange
   }, [selectedLanguage]);
 
   return (
-    <div className="min-h-screen bg-background p-4 max-w-md mx-auto">
+    <div className="min-h-screen bg-background p-4 max-w-md mx-auto pb-20">
       {/* Header with offline indicator and language selector */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
@@ -157,22 +157,43 @@ const Dashboard: React.FC<DashboardProps> = ({ onFeatureSelect, onLanguageChange
 
       {/* Voice Input Button */}
       <div className="flex justify-center mb-8">
-        <Button
-          onClick={handleVoiceInput}
-          size="lg"
-          className={`h-20 w-20 rounded-full ${
-            isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-primary hover:bg-primary/90'
-          } transition-all duration-300 shadow-lg`}
-        >
-          <Mic className="h-10 w-10" />
-        </Button>
+        <div className="relative">
+          <Button
+            onClick={handleVoiceInput}
+            size="lg"
+            className={`h-20 w-20 rounded-full ${
+              isListening 
+                ? 'bg-red-500 hover:bg-red-600 shadow-red-500/50' 
+                : 'bg-primary hover:bg-primary/90 shadow-primary/30'
+            } transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105`}
+          >
+            <Mic className={`h-10 w-10 transition-all duration-300 ${
+              isListening ? 'animate-pulse' : ''
+            }`} />
+          </Button>
+          
+          {/* Ripple effect when listening */}
+          {isListening && (
+            <>
+              <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping"></div>
+              <div className="absolute inset-0 rounded-full bg-red-500/10 animate-pulse"></div>
+            </>
+          )}
+        </div>
       </div>
 
       {isListening && (
         <div className="text-center mb-6">
-          <p className="text-primary font-medium text-lg animate-pulse">
-            {t('dashboard.listening')}
-          </p>
+          <div className="flex items-center justify-center gap-2">
+            <div className="flex gap-1">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+            <p className="text-red-600 font-medium text-lg">
+              {t('dashboard.listening')}
+            </p>
+          </div>
         </div>
       )}
 

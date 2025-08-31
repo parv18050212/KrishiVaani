@@ -4,6 +4,9 @@ import WeatherAdvisory from './components/WeatherAdvisory';
 import PestDetection from './components/PestDetection';
 import FertilizerPlan from './components/FertilizerPlan';
 import MarketPrice from './components/MarketPrice';
+import Community from './components/Community';
+import Account from './components/Account';
+import BottomNavigation from './components/BottomNavigation';
 import { useTranslation } from './hooks/useTranslation';
 
 export default function App() {
@@ -34,6 +37,10 @@ export default function App() {
         return <FertilizerPlan onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
       case 'market':
         return <MarketPrice onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
+      case 'community':
+        return <Community onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
+      case 'account':
+        return <Account onBack={handleBackToDashboard} selectedLanguage={selectedLanguage} />;
       case 'dashboard':
       default:
         return <Dashboard onFeatureSelect={handleFeatureSelect} onLanguageChange={handleLanguageChange} selectedLanguage={selectedLanguage} />;
@@ -43,6 +50,7 @@ export default function App() {
   return (
     <div className="size-full">
       {renderScreen()}
+      <BottomNavigation currentScreen={currentScreen} onNavigate={setCurrentScreen} />
     </div>
   );
 }

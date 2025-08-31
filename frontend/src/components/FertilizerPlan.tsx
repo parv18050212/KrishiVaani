@@ -73,7 +73,7 @@ const FertilizerPlan: React.FC<FertilizerPlanProps> = ({ onBack, selectedLanguag
   const recommendations = soilData?.fertilizer_plan?.recommendations;
 
   return (
-    <div className="min-h-screen bg-background p-4 max-w-md mx-auto">
+    <div className="min-h-screen bg-background p-4 max-w-md mx-auto pb-20">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <Button
