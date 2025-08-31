@@ -11,10 +11,9 @@ Pest/
 Pesticide_Dataset/
 openMeteo.py
 openWeather.py
-frontend/
 __pycache__/
 .cache.sqlite
 .env
 .venv
 /_pycache__
-/content
+
