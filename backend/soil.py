@@ -1,43 +1,46 @@
+"""
+KrishiVaani Soil/OCR API Router
+Soil health card analysis and fertilizer recommendations using Gemini Vision
+"""
+
 import os
 import re
 import json
-from fastapi import FastAPI, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, File, UploadFile, HTTPException
 from google.generativeai import configure, GenerativeModel
 from dotenv import load_dotenv
+from pathlib import Path
 import base64
-from PIL import Image
-import io
+import logging
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from backend/.env
+load_dotenv(Path(__file__).parent / ".env")
+
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Create router
+router = APIRouter(prefix="/api/soil", tags=["Soil Analysis & OCR"])
 
 # Gemini API Key
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-configure(api_key=GEMINI_API_KEY)
+if GEMINI_API_KEY:
+    configure(api_key=GEMINI_API_KEY)
+    model = GenerativeModel("gemini-1.5-flash")
+    logger.info("Gemini Vision model initialized")
+else:
+    model = None
+    logger.warning("GEMINI_API_KEY not found, OCR features will be limited")
 
-# Initialize FastAPI
-app = FastAPI()
-
-# Allow CORS for frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Gemini Model
-model = GenerativeModel("gemini-1.5-flash")
 
 def extract_npk_values_from_image(image_bytes):
     """Extract NPK values from soil health card image using Gemini Vision"""
     try:
-        # Convert image bytes to base64
+        if not model:
+            return extract_npk_with_regex(image_bytes)
+            
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         
-        # Create prompt for Gemini Vision
         prompt = """
         Analyze this soil health card image and extract the following information in JSON format:
         {
@@ -66,28 +69,28 @@ def extract_npk_values_from_image(image_bytes):
         Only return the JSON object, no additional text.
         """
         
-        # Call Gemini Vision API
         response = model.generate_content([
             prompt,
             {"mime_type": "image/jpeg", "data": image_base64}
         ])
         
-        # Parse JSON response
         try:
             result = json.loads(response.text)
             return result
         except json.JSONDecodeError:
-            # Fallback to regex extraction if JSON parsing fails
             return extract_npk_with_regex(image_bytes)
             
     except Exception as e:
-        print(f"Error in Gemini Vision extraction: {e}")
+        logger.error(f"Error in Gemini Vision extraction: {e}")
         return extract_npk_with_regex(image_bytes)
+
 
 def extract_npk_with_regex(image_bytes):
     """Fallback method using OCR with regex patterns"""
     try:
-        # Convert image to text using Gemini (simplified approach)
+        if not model:
+            return get_default_soil_data()
+            
         image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         
         prompt = "Extract all text from this soil health card image. Return only the raw text content."
@@ -99,13 +102,11 @@ def extract_npk_with_regex(image_bytes):
         
         extracted_text = response.text
         
-        # Extract NPK values using regex
         nitrogen_match = re.search(r"Available\s*Nitrogen.*?(\d+\.?\d*)", extracted_text, re.IGNORECASE | re.DOTALL)
         phosphorus_match = re.search(r"Available\s*Phosphorus.*?(\d+\.?\d*)", extracted_text, re.IGNORECASE | re.DOTALL)
         potassium_match = re.search(r"Available\s*Potassium.*?(\d+\.?\d*)", extracted_text, re.IGNORECASE | re.DOTALL)
         ph_match = re.search(r"pH.*?(\d+\.?\d*)", extracted_text, re.IGNORECASE | re.DOTALL)
         
-        # Determine levels and percentages based on extracted values
         def get_level_and_percentage(value_str, nutrient_type):
             if not value_str:
                 return {"value": "Not detected", "level": "Unknown", "percentage": 50}
@@ -144,18 +145,26 @@ def extract_npk_with_regex(image_bytes):
         }
         
     except Exception as e:
-        print(f"Error in regex extraction: {e}")
-        # Return default values if extraction fails
-        return {
-            "nitrogen": {"value": "Not detected", "level": "Unknown", "percentage": 50},
-            "phosphorus": {"value": "Not detected", "level": "Unknown", "percentage": 50},
-            "potassium": {"value": "Not detected", "level": "Unknown", "percentage": 50},
-            "ph": {"value": "Not detected", "level": "Unknown", "percentage": 50}
-        }
+        logger.error(f"Error in regex extraction: {e}")
+        return get_default_soil_data()
+
+
+def get_default_soil_data():
+    """Return default soil data when extraction fails"""
+    return {
+        "nitrogen": {"value": "Not detected", "level": "Unknown", "percentage": 50},
+        "phosphorus": {"value": "Not detected", "level": "Unknown", "percentage": 50},
+        "potassium": {"value": "Not detected", "level": "Unknown", "percentage": 50},
+        "ph": {"value": "Not detected", "level": "Unknown", "percentage": 50}
+    }
+
 
 def generate_fertilizer_plan(soil_data):
     """Generate fertilizer plan based on soil data using Gemini"""
     try:
+        if not model:
+            return get_default_fertilizer_plan(soil_data)
+            
         prompt = f"""
         Based on this soil health data:
         Nitrogen: {soil_data['nitrogen']['value']} ({soil_data['nitrogen']['level']})
@@ -211,12 +220,12 @@ def generate_fertilizer_plan(soil_data):
             result = json.loads(response.text)
             return result
         except json.JSONDecodeError:
-            # Return default plan if JSON parsing fails
             return get_default_fertilizer_plan(soil_data)
             
     except Exception as e:
-        print(f"Error generating fertilizer plan: {e}")
+        logger.error(f"Error generating fertilizer plan: {e}")
         return get_default_fertilizer_plan(soil_data)
+
 
 def get_default_fertilizer_plan(soil_data):
     """Default fertilizer plan based on soil deficiencies"""
@@ -272,10 +281,25 @@ def get_default_fertilizer_plan(soil_data):
         }
     }
 
-@app.post("/analyze-soil")
+
+@router.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "Soil Analysis & OCR API",
+        "gemini_configured": model is not None
+    }
+
+
+@router.post("/analyze")
 async def analyze_soil(file: UploadFile = File(...)):
+    """
+    Analyze soil health card image and generate fertilizer plan
+    """
     try:
-        # Read uploaded file
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+            
         file_bytes = await file.read()
         
         # Extract soil data from image
@@ -284,7 +308,6 @@ async def analyze_soil(file: UploadFile = File(...)):
         # Generate fertilizer plan
         fertilizer_plan = generate_fertilizer_plan(soil_data)
         
-        # Combine all data
         result = {
             "status": "success",
             "soil_health": soil_data,
@@ -293,24 +316,14 @@ async def analyze_soil(file: UploadFile = File(...)):
         
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error analyzing soil: {e}")
+        default_soil = get_default_soil_data()
         return {
             "status": "error", 
             "message": str(e),
-            "soil_health": {
-                "nitrogen": {"value": "Error", "level": "Unknown", "percentage": 50},
-                "phosphorus": {"value": "Error", "level": "Unknown", "percentage": 50},
-                "potassium": {"value": "Error", "level": "Unknown", "percentage": 50},
-                "ph": {"value": "Error", "level": "Unknown", "percentage": 50}
-            },
-            "fertilizer_plan": get_default_fertilizer_plan({
-                "nitrogen": {"value": "Error", "level": "Unknown", "percentage": 50},
-                "phosphorus": {"value": "Error", "level": "Unknown", "percentage": 50},
-                "potassium": {"value": "Error", "level": "Unknown", "percentage": 50},
-                "ph": {"value": "Error", "level": "Unknown", "percentage": 50}
-            })
+            "soil_health": default_soil,
+            "fertilizer_plan": get_default_fertilizer_plan(default_soil)
         }
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "OCR Soil Analysis"}

@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://43.204.140.241:8000';
-const WEATHER_API_BASE_URL = 'http://43.204.140.241:8001';
-const MARKET_API_BASE_URL = 'http://43.204.140.241:8002';
-const OCR_API_BASE_URL = 'http://43.204.140.241:8003';
+// Backend URL from environment variable
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -59,7 +57,7 @@ export const pestDetectionAPI = {
     const formData = new FormData();
     formData.append('file', imageFile);
     
-    const response = await api.post('/detect-pest', formData, {
+    const response = await api.post('/api/pest/detect', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -70,13 +68,13 @@ export const pestDetectionAPI = {
 
   // Get all pesticides data
   getPesticides: async (): Promise<PesticideInfo[]> => {
-    const response = await api.get('/pesticides');
-    return response.data.pesticides;
+    const response = await api.get('/api/pest/pesticides');
+    return response.data.pesticides_data.pesticides;
   },
 
   // Health check
   healthCheck: async () => {
-    const response = await api.get('/health');
+    const response = await api.get('/api/pest/health');
     return response.data;
   },
 };
@@ -118,18 +116,10 @@ export interface WeatherData {
   };
 }
 
-// Create separate axios instance for weather API
-const weatherApi = axios.create({
-  baseURL: WEATHER_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export const weatherAPI = {
   // Get weather data for coordinates
   getWeatherData: async (latitude: number, longitude: number): Promise<WeatherData> => {
-    const response = await weatherApi.post('/weather', {
+    const response = await api.post('/api/weather', {
       latitude,
       longitude
     });
@@ -138,7 +128,7 @@ export const weatherAPI = {
 
   // Health check
   healthCheck: async () => {
-    const response = await weatherApi.get('/health');
+    const response = await api.get('/api/weather/health');
     return response.data;
   },
 };
@@ -179,18 +169,10 @@ export interface MarketData {
   };
 }
 
-// Create separate axios instance for market API
-const marketApi = axios.create({
-  baseURL: MARKET_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
 export const marketAPI = {
   // Get market prices for coordinates
   getMarketPrices: async (latitude: number, longitude: number): Promise<MarketData> => {
-    const response = await marketApi.post('/market-prices', {
+    const response = await api.post('/api/market/prices', {
       latitude,
       longitude
     });
@@ -199,18 +181,10 @@ export const marketAPI = {
 
   // Health check
   healthCheck: async () => {
-    const response = await marketApi.get('/health');
+    const response = await api.get('/api/market/health');
     return response.data;
   },
 };
-
-// Create separate axios instance for OCR API
-const ocrApi = axios.create({
-  baseURL: OCR_API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
 export interface SoilAnalysisResult {
   status: string;
@@ -263,7 +237,7 @@ export const fertilizerAPI = {
     const formData = new FormData();
     formData.append('file', imageFile);
     
-    const response = await ocrApi.post('/analyze-soil', formData, {
+    const response = await api.post('/api/soil/analyze', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -274,7 +248,7 @@ export const fertilizerAPI = {
 
   // Health check
   healthCheck: async () => {
-    const response = await ocrApi.get('/health');
+    const response = await api.get('/api/soil/health');
     return response.data;
   },
 };

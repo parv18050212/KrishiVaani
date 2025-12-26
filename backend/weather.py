@@ -1,88 +1,97 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+"""
+KrishiVaani Weather API Router
+Weather data and agricultural advisory using Open-Meteo API
+"""
+
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import openmeteo_requests
-import geocoder
 import pandas as pd
 import requests_cache
 from retry_requests import retry
 from openai import OpenAI
 from dotenv import load_dotenv
+from pathlib import Path
 from os import getenv
 import logging
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from backend/.env
+load_dotenv(Path(__file__).parent / ".env")
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="KrishiVaani Weather API",
-    description="Weather API for agricultural advisory",
-    version="1.0.0"
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create router
+router = APIRouter(prefix="/api/weather", tags=["Weather"])
 
 # Setup the Open-Meteo API client with cache and retry on error
 cache_session = requests_cache.CachedSession('.cache', expire_after=3600)
 retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
 openmeteo = openmeteo_requests.Client(session=retry_session)
 
-# Initialize OpenAI client
+# Initialize OpenAI client for Gemini
 try:
     client = OpenAI(
-        api_key=getenv("api"),
+        api_key=getenv("GEMINI_API_KEY"),
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
     )
-    logger.info("OpenAI client initialized successfully")
+    logger.info("Weather AI client initialized successfully")
 except Exception as e:
-    logger.error(f"Error initializing OpenAI client: {e}")
+    logger.error(f"Error initializing AI client: {e}")
     client = None
+
 
 class LocationRequest(BaseModel):
     latitude: float
     longitude: float
 
-@app.get("/")
-async def root():
-    return {
-        "service": "KrishiVaani Weather API",
-        "status": "running",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "weather": "/weather"
-        }
-    }
 
-@app.get("/health")
+def get_weather_condition(weather_code):
+    """Convert weather code to human-readable condition"""
+    weather_conditions = {
+        0: "Clear sky",
+        1: "Mainly clear",
+        2: "Partly cloudy",
+        3: "Overcast",
+        45: "Foggy",
+        48: "Depositing rime fog",
+        51: "Light drizzle",
+        53: "Moderate drizzle",
+        55: "Dense drizzle",
+        56: "Light freezing drizzle",
+        57: "Dense freezing drizzle",
+        61: "Slight rain",
+        63: "Moderate rain",
+        65: "Heavy rain",
+        66: "Light freezing rain",
+        67: "Heavy freezing rain",
+        71: "Slight snow fall",
+        73: "Moderate snow fall",
+        75: "Heavy snow fall",
+        77: "Snow grains",
+        80: "Slight rain showers",
+        81: "Moderate rain showers",
+        82: "Violent rain showers",
+        85: "Slight snow showers",
+        86: "Heavy snow showers",
+        95: "Thunderstorm",
+        96: "Thunderstorm with slight hail",
+        99: "Thunderstorm with heavy hail"
+    }
+    return weather_conditions.get(weather_code, "Unknown")
+
+
+@router.get("/health")
 async def health_check():
     return {
-        "api_status": {
-            "status": "healthy",
-            "service": "KrishiVaani Weather API",
-            "version": "1.0.0"
-        },
-        "services": {
-            "openai_configured": client is not None,
-            "weather_api_available": True,
-            "cache_enabled": True
-        }
+        "status": "healthy",
+        "service": "Weather API",
+        "ai_configured": client is not None
     }
 
-@app.post("/weather")
+
+@router.post("")
 async def get_weather_data(location: LocationRequest):
     """
     Get weather data and agricultural advisory for given coordinates
@@ -209,7 +218,7 @@ async def get_weather_data(location: LocationRequest):
             try:
                 logger.info("Generating AI advisory...")
                 resp = client.chat.completions.create(
-                    model="gemini-2.5-pro",
+                    model="gemini-2.0-flash",
                     messages=[
                         {"role": "user", "content": """
 You are an expert agricultural data analyst with strong skills in weather forecasting and crop advisory.
@@ -250,7 +259,7 @@ Output Format:
             if i < len(daily_dataframe):
                 day_data = daily_dataframe.iloc[i]
                 forecast.append({
-                    "day": day_data["date"].strftime("%A")[:3],  # First 3 letters of day
+                    "day": day_data["date"].strftime("%A")[:3],
                     "temp": f"{int(day_data['temperature_2m_min'])}-{int(day_data['temperature_2m_max'])}°",
                     "rain": f"{int(day_data['rain_sum'] + day_data['showers_sum'])}%",
                     "weather_code": int(day_data["weather_code"])
@@ -296,41 +305,3 @@ Output Format:
     except Exception as e:
         logger.error(f"Error fetching weather data: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching weather data: {str(e)}")
-
-def get_weather_condition(weather_code):
-    """Convert weather code to human-readable condition"""
-    weather_conditions = {
-        0: "Clear sky",
-        1: "Mainly clear",
-        2: "Partly cloudy",
-        3: "Overcast",
-        45: "Foggy",
-        48: "Depositing rime fog",
-        51: "Light drizzle",
-        53: "Moderate drizzle",
-        55: "Dense drizzle",
-        56: "Light freezing drizzle",
-        57: "Dense freezing drizzle",
-        61: "Slight rain",
-        63: "Moderate rain",
-        65: "Heavy rain",
-        66: "Light freezing rain",
-        67: "Heavy freezing rain",
-        71: "Slight snow fall",
-        73: "Moderate snow fall",
-        75: "Heavy snow fall",
-        77: "Snow grains",
-        80: "Slight rain showers",
-        81: "Moderate rain showers",
-        82: "Violent rain showers",
-        85: "Slight snow showers",
-        86: "Heavy snow showers",
-        95: "Thunderstorm",
-        96: "Thunderstorm with slight hail",
-        99: "Thunderstorm with heavy hail"
-    }
-    return weather_conditions.get(weather_code, "Unknown")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)

@@ -1,0 +1,39 @@
+# KrishiVaani Backend Dependencies
+# ==================================
+
+# FastAPI and server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+
+# HTTP client
+httpx>=0.25.0
+
+# Environment and configuration
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# AI/LLM providers
+openai>=1.3.0
+google-generativeai>=0.3.2
+
+# LangChain for Agentic AI
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-google-genai>=1.0.0
+langchain-openai>=0.1.0
+langgraph>=0.1.0
+
+# Data processing
+pandas>=2.1.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# Weather API
+openmeteo-requests>=0.1.0
+requests-cache>=1.1.0
+retry-requests>=0.1.0
+
+# Geocoding
+geopy>=2.4.0
+geocoder>=1.38.0

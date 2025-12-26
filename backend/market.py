@@ -1,5 +1,9 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+"""
+KrishiVaani Market API Router
+Market prices and mandi information using AI and geocoding
+"""
+
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -8,76 +12,50 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 import os
 import logging
+import json
+from pathlib import Path
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from backend/.env
+load_dotenv(Path(__file__).parent / ".env")
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="KrishiVaani Market API",
-    description="Market price API for agricultural commodities",
-    version="1.0.0"
-)
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create router
+router = APIRouter(prefix="/api/market", tags=["Market Prices"])
 
 # Initialize Nominatim geocoder
 geolocator = Nominatim(user_agent="krishivaani-market-app")
 reverse = RateLimiter(geolocator.reverse, min_delay_seconds=1)
 
-# Initialize OpenAI client
+# Initialize OpenAI client for Perplexity
 try:
     client = OpenAI(
-        api_key=os.getenv("perplexity_api"),
+        api_key=os.getenv("PERPLEXITY_API_KEY"),
         base_url="https://api.perplexity.ai"
     )
-    logger.info("OpenAI client initialized successfully")
+    logger.info("Market AI client initialized successfully")
 except Exception as e:
-    logger.error(f"Error initializing OpenAI client: {e}")
+    logger.error(f"Error initializing AI client: {e}")
     client = None
+
 
 class LocationRequest(BaseModel):
     latitude: float
     longitude: float
 
-@app.get("/")
-async def root():
-    return {
-        "service": "KrishiVaani Market API",
-        "status": "running",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "market_prices": "/market-prices"
-        }
-    }
 
-@app.get("/health")
+@router.get("/health")
 async def health_check():
     return {
-        "api_status": {
-            "status": "healthy",
-            "service": "KrishiVaani Market API",
-            "version": "1.0.0"
-        },
-        "services": {
-            "openai_configured": client is not None,
-            "geocoding_available": True
-        }
+        "status": "healthy",
+        "service": "Market Prices API",
+        "ai_configured": client is not None,
+        "geocoding_available": True
     }
 
-@app.post("/market-prices")
+
+@router.post("/prices")
 async def get_market_prices(location: LocationRequest):
     """
     Get market prices for agricultural commodities based on location
@@ -97,7 +75,6 @@ async def get_market_prices(location: LocationRequest):
         
         logger.info(f"Location: {district}, {state}")
         
-        # Get market prices using AI
         if not client:
             raise HTTPException(status_code=500, detail="AI service not configured")
         
@@ -140,10 +117,8 @@ async def get_market_prices(location: LocationRequest):
         )
         
         try:
-            import json
             market_data = json.loads(resp.choices[0].message.content)
             
-            # Create structured response for frontend
             result = {
                 "market_data": {
                     "location": {
@@ -168,7 +143,6 @@ async def get_market_prices(location: LocationRequest):
                 }
             }
         except json.JSONDecodeError:
-            # Fallback if AI doesn't return valid JSON
             logger.warning("AI response not in JSON format, using fallback data")
             result = {
                 "market_data": {
@@ -180,66 +154,16 @@ async def get_market_prices(location: LocationRequest):
                         "longitude": location.longitude
                     },
                     "current_prices": [
-                        {
-                            "crop": "Wheat",
-                            "current_price": "2,150",
-                            "yesterday_price": "2,100",
-                            "trend": "up",
-                            "change": "+50",
-                            "unit": "per quintal"
-                        },
-                        {
-                            "crop": "Rice",
-                            "current_price": "1,950",
-                            "yesterday_price": "2,000",
-                            "trend": "down",
-                            "change": "-50",
-                            "unit": "per quintal"
-                        },
-                        {
-                            "crop": "Corn",
-                            "current_price": "1,750",
-                            "yesterday_price": "1,720",
-                            "trend": "up",
-                            "change": "+30",
-                            "unit": "per quintal"
-                        },
-                        {
-                            "crop": "Mustard",
-                            "current_price": "5,200",
-                            "yesterday_price": "5,180",
-                            "trend": "up",
-                            "change": "+20",
-                            "unit": "per quintal"
-                        },
-                        {
-                            "crop": "Chickpea",
-                            "current_price": "4,800",
-                            "yesterday_price": "4,850",
-                            "trend": "down",
-                            "change": "-50",
-                            "unit": "per quintal"
-                        }
+                        {"crop": "Wheat", "current_price": "2,150", "yesterday_price": "2,100", "trend": "up", "change": "+50", "unit": "per quintal"},
+                        {"crop": "Rice", "current_price": "1,950", "yesterday_price": "2,000", "trend": "down", "change": "-50", "unit": "per quintal"},
+                        {"crop": "Corn", "current_price": "1,750", "yesterday_price": "1,720", "trend": "up", "change": "+30", "unit": "per quintal"},
+                        {"crop": "Mustard", "current_price": "5,200", "yesterday_price": "5,180", "trend": "up", "change": "+20", "unit": "per quintal"},
+                        {"crop": "Chickpea", "current_price": "4,800", "yesterday_price": "4,850", "trend": "down", "change": "-50", "unit": "per quintal"}
                     ],
                     "nearby_mandis": [
-                        {
-                            "name": f"{district} Mandi",
-                            "distance": "2 km",
-                            "status": "Open",
-                            "timing": "6:00 AM - 12:00 PM"
-                        },
-                        {
-                            "name": "District Mandi",
-                            "distance": "15 km",
-                            "status": "Open",
-                            "timing": "5:00 AM - 1:00 PM"
-                        },
-                        {
-                            "name": "APMC Mandi",
-                            "distance": "25 km",
-                            "status": "Open",
-                            "timing": "24/7"
-                        }
+                        {"name": f"{district} Mandi", "distance": "2 km", "status": "Open", "timing": "6:00 AM - 12:00 PM"},
+                        {"name": "District Mandi", "distance": "15 km", "status": "Open", "timing": "5:00 AM - 1:00 PM"},
+                        {"name": "APMC Mandi", "distance": "25 km", "status": "Open", "timing": "24/7"}
                     ]
                 },
                 "recommendations": {
@@ -259,7 +183,3 @@ async def get_market_prices(location: LocationRequest):
     except Exception as e:
         logger.error(f"Error fetching market prices: {e}")
         raise HTTPException(status_code=500, detail=f"Error fetching market prices: {str(e)}")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8002)

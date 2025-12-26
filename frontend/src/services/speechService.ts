@@ -84,8 +84,33 @@ class SpeechService {
 
     this.recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
+      this.isListening = false;
+      
+      // Provide user-friendly error messages
+      let errorMessage = event.error;
+      switch (event.error) {
+        case 'network':
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+          break;
+        case 'not-allowed':
+        case 'permission-denied':
+          errorMessage = 'Microphone access denied. Please allow microphone permission in your browser.';
+          break;
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try speaking again.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'No microphone found. Please connect a microphone and try again.';
+          break;
+        case 'aborted':
+          errorMessage = 'Speech recognition was stopped.';
+          break;
+        default:
+          errorMessage = `Speech error: ${event.error}. Please try again.`;
+      }
+      
       if (this.onErrorCallback) {
-        this.onErrorCallback(event.error);
+        this.onErrorCallback(errorMessage);
       }
     };
 
@@ -137,8 +162,9 @@ class SpeechService {
   }
 
   public async sendToRAG(query: string): Promise<RAGResponse> {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
     try {
-      const response = await fetch('http://43.204.140.241:8080/chat/speech', {
+      const response = await fetch(`${backendUrl}/chat/speech`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,269 +1,255 @@
-# 🌾 KrishiVaani - Farmer-Friendly Crop Advisory Mobile App
+# 🌾 KrishiVaani - AI-Powered Agricultural Advisory Platform
 
-KrishiVaani is a comprehensive agricultural advisory platform that leverages AI and machine learning to provide farmers with real-time weather information, pest detection, fertilizer recommendations, and market price insights. The application is designed to be accessible in multiple languages and provides a user-friendly interface for farmers to make informed agricultural decisions.
+KrishiVaani is a comprehensive agricultural advisory platform designed for Indian farmers. It leverages advanced AI (Perplexity Sonar Pro) with LangGraph agents to provide real-time weather information, pest detection, market prices, soil analysis, and intelligent farming advice through voice and text.
 
 ## 🚀 Features
+
+### 🤖 Agentic AI Assistant
+- **LangGraph-powered agent** with tool-calling capabilities
+- **Perplexity Sonar Pro** for intelligent responses
+- Voice-enabled chat with speech-to-text
+- Conversation memory and rollback support
+- Multi-language support for Indian farmers
 
 ### 🌤️ Weather Advisory
 - Real-time weather forecasts using Open-Meteo API
 - Agricultural-specific weather insights
-- Soil temperature and moisture monitoring
-- UV index and wind speed analysis
-- AI-powered crop-specific weather recommendations
+- Crop-specific weather recommendations
+- Soil temperature and moisture analysis
 
 ### 🐛 Pest Detection
-- Image-based pest identification using AI
+- AI-powered image-based pest identification
 - Treatment recommendations with confidence scoring
 - Comprehensive pesticide database
-- Image quality assessment for better accuracy
-- Multi-language support for pest information
+- Multi-language pest information
 
-### 🌱 Fertilizer Planning
+### 🌱 Soil Analysis
+- Soil health card OCR analysis
 - AI-powered fertilizer recommendations
 - Crop-specific nutrient management
-- Soil health analysis
-- Seasonal fertilizer planning
-- Cost-effective fertilizer suggestions
+- NPK ratio suggestions
 
-### 📊 Market Price Analysis
-- Real-time agricultural commodity prices
+### 📊 Market Prices
+- Real-time mandi (market) prices
 - Location-based market insights
 - Price trend analysis
-- Market forecasting using AI
 - Multi-language market information
-
-### 💬 AI Chat Assistant (RAG)
-- Retrieval-Augmented Generation (RAG) powered chat
-- Context-aware agricultural advice
-- Integration with Supabase vector database
-- Gemini AI embeddings for semantic search
-- Perplexity AI for enhanced responses
-
-### 🌍 Multi-Language Support
-- Support for multiple Indian languages
-- Voice-to-text capabilities
-- Localized agricultural terminology
-- Cultural context-aware recommendations
 
 ## 🏗️ Architecture
 
-The project follows a modern microservices architecture with:
-
-- **Frontend**: React + TypeScript + Vite
-- **Backend APIs**: FastAPI (Python)
-- **AI Services**: Google Gemini, Perplexity AI
-- **Database**: Supabase (PostgreSQL + Vector Store)
-- **UI Components**: Radix UI + Tailwind CSS
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (React + Vite)                  │
+│                    http://localhost:3000                    │
+└─────────────────────┬───────────────────────────────────────┘
+                      │ HTTP/REST
+┌─────────────────────▼───────────────────────────────────────┐
+│                 Unified Backend (FastAPI)                   │
+│                   http://localhost:8000                     │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │                    main.py                          │    │
+│  │  - /chat/* endpoints (uses backend/agent.py)        │    │
+│  │  - Imports routers from backend modules             │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                           │                                 │
+│  ┌────────────┬───────────┼───────────┬────────────────┐    │
+│  │            │           │           │                │    │
+│  ▼            ▼           ▼           ▼                ▼    │
+│ agent.py   weather.py   pest.py   market.py        soil.py  │
+│ (LangGraph) (Open-Meteo) (Perplexity) (Mandi API) (OCR)     │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## 📁 Project Structure
 
 ```
 KrishiVaani/
+├── main.py                   # Unified FastAPI server (entry point)
+├── requirements.txt          # Python dependencies
+├── .env                      # Environment variables
+├── backend/                  # Backend modules
+│   ├── agent.py             # LangGraph AI agent (Perplexity Sonar Pro)
+│   ├── weather.py           # Weather API service
+│   ├── pest.py              # Pest detection service
+│   ├── market.py            # Market prices service
+│   ├── soil.py              # Soil analysis service
+│   ├── Pesticides.csv       # Pesticide database
+│   └── .env                 # Backend-specific env vars
 ├── frontend/                 # React TypeScript frontend
 │   ├── src/
-│   │   ├── components/       # UI components
-│   │   ├── services/         # API services
-│   │   ├── hooks/           # Custom React hooks
-│   │   └── styles/          # CSS styles
+│   │   ├── components/      # UI components
+│   │   ├── services/        # API services
+│   │   └── hooks/           # Custom React hooks
+│   ├── .env                 # Frontend env (VITE_BACKEND_URL)
 │   ├── package.json
 │   └── vite.config.ts
-├── backend/                  # FastAPI microservices
-│   ├── weather_api.py       # Weather advisory service
-│   ├── pest_api.py          # Pest detection service
-│   ├── market_api.py        # Market price service
-│   ├── ocr.py              # OCR service
-│   ├── requirements.txt
-│   └── Pesticides.csv      # Pest database
-├── localBackend/            # Local development services
-├── main.py                  # RAG chat API
-├── ingest.py               # Data ingestion script
-└── pest/                   # Pest image dataset
+├── localBackend/            # Alternative local services
+└── pest/                    # Pest image dataset
 ```
 
 ## 🛠️ Technology Stack
 
+### Backend
+- **FastAPI** - High-performance web framework
+- **LangChain + LangGraph** - Agentic AI framework
+- **Perplexity Sonar Pro** - Primary AI model
+- **Python 3.8+** - Programming language
+- **Uvicorn** - ASGI server
+
 ### Frontend
 - **React 18** - UI framework
 - **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
+- **Vite** - Build tool
 - **Tailwind CSS** - Styling
-- **Radix UI** - Accessible UI components
-- **Axios** - HTTP client
-- **React Hook Form** - Form management
+- **Web Speech API** - Voice input
 
-### Backend
-- **FastAPI** - Web framework
-- **Python 3.8+** - Programming language
-- **Uvicorn** - ASGI server
-- **Pandas** - Data manipulation
-- **Pillow** - Image processing
-- **OpenAI** - AI client (Perplexity/Gemini)
-
-### AI & ML
-- **Google Gemini** - Embeddings and AI responses
-- **Perplexity AI** - Enhanced AI responses
-- **Supabase** - Vector database and storage
-- **Open-Meteo** - Weather data API
-
-### Development Tools
-- **Git** - Version control
-- **Python venv** - Virtual environment
-- **npm** - Package management
+### External APIs
+- **Perplexity AI** - Chat and pest detection
+- **Open-Meteo** - Weather data
+- **Government Mandi API** - Market prices
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8 or higher
-- Node.js 16 or higher
+- Python 3.8+
+- Node.js 16+
 - Git
 
-### Environment Setup
+### 1. Clone & Setup Environment
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd KrishiVaani
-   ```
+```bash
+git clone <repository-url>
+cd KrishiVaani
 
-2. **Set up Python environment**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   pip install -r backend/requirements.txt
-   ```
+# Create Python virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-3. **Set up frontend dependencies**
-   ```bash
-   cd frontend
-   npm install
-   cd ..
-   ```
+# Install dependencies
+pip install -r requirements.txt
+```
 
-4. **Environment Variables**
-   Create a `.env` file in the root directory:
-   ```env
-   # Supabase Configuration
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_KEY=your_supabase_key
-   SUPABASE_TABLE=rag_documents
+### 2. Configure Environment Variables
 
-   # AI API Keys
-   GEMINI_API_KEY=your_gemini_api_key
-   PERPLEXITY_API_KEY=your_perplexity_api_key
+Create `backend/.env`:
+```env
+PERPLEXITY_API_KEY=your_perplexity_api_key
 
-   # Weather API
-   api=your_weather_api_key
+# Optional: Override service URLs
+WEATHER_API_URL=http://localhost:8000
+PEST_API_URL=http://localhost:8000
+MARKET_API_URL=http://localhost:8000
+```
 
-   # Optional: OCR API
-   OCR_API_KEY=your_ocr_api_key
-   ```
+Create `frontend/.env`:
+```env
+VITE_BACKEND_URL=http://127.0.0.1:8000
+```
 
-### Running the Application
+### 3. Start the Backend
 
-1. **Start the RAG Chat API**
-   ```bash
-   python main.py
-   ```
+```bash
+# From project root
+python main.py
+```
 
-2. **Start Weather API**
-   ```bash
-   cd backend
-   python start_weather_api.py
-   ```
+Backend will start at `http://localhost:8000`
 
-3. **Start Pest Detection API**
-   ```bash
-   cd backend
-   python start_pest_api.py
-   ```
+### 4. Start the Frontend
 
-4. **Start Market API**
-   ```bash
-   cd backend
-   python start_market_api.py
-   ```
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-5. **Start Frontend Development Server**
-   ```bash
-   cd frontend
-   npm run dev
-   ```
-
-The application will be available at `http://localhost:5173`
+Frontend will start at `http://localhost:3000`
 
 ## 📚 API Documentation
 
-### RAG Chat API (`main.py`)
-- **POST** `/chat` - Chat with AI assistant
-- **POST** `/stream-chat` - Streaming chat responses
-- **POST** `/ingest` - Ingest documents into vector store
+Once the backend is running, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
-### Weather API (`weather_api.py`)
-- **GET** `/health` - Health check
-- **POST** `/weather` - Get weather data and advisory
+### Main Endpoints
 
-### Pest Detection API (`pest_api.py`)
-- **GET** `/health` - Health check
-- **POST** `/detect-pest` - Detect pests from image
-- **GET** `/pesticides` - Get pesticide information
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat` | POST | AI chat with agentic tools |
+| `/chat/speech` | POST | Optimized for voice queries |
+| `/chat/rollback/{session_id}` | POST | Rollback conversation state |
+| `/api/weather` | POST | Get weather advisory |
+| `/api/pest/detect` | POST | Detect pest from image |
+| `/api/market/prices` | POST | Get mandi prices |
+| `/api/soil/analyze` | POST | Analyze soil health card |
+| `/health` | GET | System health check |
 
-### Market API (`market_api.py`)
-- **GET** `/health` - Health check
-- **POST** `/market-prices` - Get market prices
+### Chat Request Example
 
-## 🔧 Development
-
-### Adding New Features
-1. Create new components in `frontend/src/components/`
-2. Add corresponding API endpoints in backend services
-3. Update routing in `App.tsx`
-4. Add translations for new features
-
-### Code Style
-- Frontend: ESLint + Prettier
-- Backend: Black + Flake8
-- TypeScript strict mode enabled
-- Python type hints required
-
-### Testing
-```bash
-# Frontend tests
-cd frontend
-npm test
-
-# Backend tests
-cd backend
-python -m pytest
+```json
+POST /chat
+{
+  "query": "What is the best time to sow wheat in Punjab?",
+  "session_id": "optional-session-id",
+  "language": "en",
+  "location": "Punjab",
+  "crop": "wheat"
+}
 ```
+
+### Chat Response Example
+
+```json
+{
+  "answer": "The best time to sow wheat in Punjab is...",
+  "session_id": "session_20251226_123456_abc123",
+  "has_context": true,
+  "tools_used": ["get_crop_calendar"],
+  "sources": []
+}
+```
+
+## 🔧 Agent Tools
+
+The LangGraph agent has access to these tools:
+
+| Tool | Description |
+|------|-------------|
+| `get_weather_advisory` | Fetch weather data and farming advice |
+| `get_pest_information` | Get pest details and treatment |
+| `get_market_prices` | Fetch current mandi prices |
+| `get_fertilizer_recommendation` | Crop-specific fertilizer advice |
+| `get_crop_calendar` | Sowing/harvesting schedules |
+| `general_agriculture_query` | General farming questions |
+
+## 🌍 Multi-Language Support
+
+KrishiVaani supports queries in multiple Indian languages. The AI will respond in the same language as the query.
+
+Supported features:
+- Hindi, Punjabi, Tamil, Telugu, and more
+- Voice input via Web Speech API (Chrome recommended)
+- Localized agricultural terminology
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- **Open-Meteo** for weather data
-- **Google Gemini** for AI capabilities
-- **Perplexity AI** for enhanced responses
-- **Supabase** for database and vector storage
-- **Radix UI** for accessible components
-- **Tailwind CSS** for styling
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in the repository
-- Contact the development team
-- Check the documentation in the `docs/` folder
+- **Perplexity AI** - AI chat capabilities
+- **Open-Meteo** - Weather data API
+- **LangChain/LangGraph** - Agent framework
+- **Government of India** - Mandi price data
 
 ---
 
-**KrishiVaani** - Empowering farmers with AI-driven agricultural insights 🌾✨
+**KrishiVaani** - Empowering Indian farmers with AI-driven agricultural insights 🌾✨

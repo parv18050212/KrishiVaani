@@ -1,465 +1,338 @@
+"""
+KrishiVaani - Unified Backend Server
+Agricultural Advisory System for Indian Farmers
+
+This is the main entry point that imports all modules from the backend folder
+and provides a unified FastAPI application on port 8000.
+
+Routes:
+- /chat/* - Agentic AI chat endpoints (defined here, using backend.agent)
+- /api/weather/* - Weather data and agricultural advisory
+- /api/pest/* - Pest detection and treatment
+- /api/market/* - Market prices and mandi information
+- /api/soil/* - Soil analysis and fertilizer recommendations
+"""
+
+import logging
 import os
-import json
-from typing import List, Optional, Dict, Any
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Optional, List, Dict, Any
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from dotenv import load_dotenv
 import httpx
+from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from dotenv import load_dotenv
 
-# Supabase
-from supabase import create_client, Client
+# Load environment variables from backend/.env
+backend_env = Path(__file__).parent / "backend" / ".env"
+load_dotenv(backend_env)
 
-# Gemini
-import google.generativeai as genai
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
-# -----------------------
-# Config
-# -----------------------
-load_dotenv()
+# Import agent functions from backend.agent (no router, just functions)
+from backend.agent import (
+    process_chat,
+    process_speech_chat,
+    rollback_conversation,
+    get_session_history,
+    clear_session_history
+)
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_TABLE = os.getenv("SUPABASE_TABLE", "rag_documents")
+# Import routers from backend folder
+from backend.weather import router as weather_router
+from backend.pest import router as pest_router
+from backend.market import router as market_router
+from backend.soil import router as soil_router
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/embedding-001")
+# HTTP client for internal use
+http_client = None
 
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
-PERPLEXITY_MODEL = os.getenv("PERPLEXITY_MODEL", "llama-3.1-sonar-large-128k-online")
 
-TOP_K = int(os.getenv("TOP_K", "4"))
+# ==================== PYDANTIC MODELS FOR CHAT ====================
 
-if not all([SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY, PERPLEXITY_API_KEY]):
-    raise RuntimeError("Missing one or more required env vars.")
+class ChatRequest(BaseModel):
+    """Request model for chat endpoint."""
+    query: str = Field(..., min_length=1, description="User's question")
+    session_id: Optional[str] = Field(None, description="Session ID for conversation continuity")
+    language: Optional[str] = Field("en", description="Preferred response language")
+    location: Optional[str] = Field(None, description="User's location")
+    crop: Optional[str] = Field(None, description="Current crop context")
+    chat_history: Optional[List[Dict[str, str]]] = Field(default_factory=list)
 
-# -----------------------
-# Clients
-# -----------------------
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-genai.configure(api_key=GEMINI_API_KEY)
 
-# -----------------------
-# FastAPI
-# -----------------------
-app = FastAPI(title="KrishiVaani RAG Chat API", version="0.1.0")
+class ChatResponse(BaseModel):
+    """Response model for chat endpoint."""
+    answer: str
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+    session_id: str
+    has_context: bool = False
+    tools_used: List[str] = Field(default_factory=list)
 
+
+class RollbackRequest(BaseModel):
+    """Request model for rollback endpoint."""
+    steps: int = Field(1, ge=1, le=10, description="Number of steps to rollback")
+
+
+# ==================== CHAT ROUTER ====================
+
+chat_router = APIRouter(prefix="/chat", tags=["Chat & AI"])
+
+
+@chat_router.post("", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """
+    Main chat endpoint with agentic AI capabilities.
+    Supports tool use, conversation memory, and rollback.
+    """
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    
+    try:
+        result = await process_chat(
+            query=request.query,
+            session_id=request.session_id,
+            language=request.language or "en",
+            location=request.location,
+            crop=request.crop,
+            chat_history=request.chat_history
+        )
+        
+        return ChatResponse(
+            answer=result["answer"],
+            sources=[],
+            session_id=result["session_id"],
+            has_context=result["has_context"],
+            tools_used=result["tools_used"]
+        )
+    
+    except Exception as e:
+        logger.error(f"Chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+
+@chat_router.post("/speech", response_model=ChatResponse)
+async def speech_chat(request: ChatRequest):
+    """
+    Specialized endpoint for speech-to-text queries.
+    Uses direct LLM call for faster response.
+    """
+    if not request.query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    
+    try:
+        result = await process_speech_chat(
+            query=request.query,
+            session_id=request.session_id
+        )
+        
+        return ChatResponse(
+            answer=result["answer"],
+            sources=[],
+            session_id=result["session_id"],
+            has_context=result["has_context"],
+            tools_used=result["tools_used"]
+        )
+    
+    except Exception as e:
+        logger.error(f"Speech chat error: {e}")
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+
+@chat_router.post("/simple")
+async def simple_chat(query: str):
+    """Simplified chat endpoint for quick queries."""
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    
+    request = ChatRequest(query=query)
+    response = await chat(request)
+    return {"answer": response.answer, "has_context": response.has_context}
+
+
+@chat_router.post("/rollback/{session_id}")
+async def rollback_session(session_id: str, request: RollbackRequest):
+    """
+    Rollback a session to a previous state.
+    Useful for undoing unwanted responses or recovering from errors.
+    """
+    try:
+        result = await rollback_conversation(session_id, request.steps)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Rollback error: {e}")
+        raise HTTPException(status_code=500, detail=f"Rollback failed: {str(e)}")
+
+
+@chat_router.get("/session/{session_id}/history")
+async def get_history(session_id: str):
+    """Get conversation history for a session."""
+    history = get_session_history(session_id)
+    return {
+        "session_id": session_id,
+        "history": history,
+        "message_count": len(history)
+    }
+
+
+@chat_router.delete("/session/{session_id}")
+async def clear_session(session_id: str):
+    """Clear a session's history."""
+    clear_session_history(session_id)
+    return {"status": "success", "message": f"Session {session_id} cleared"}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan."""
+    global http_client
+    http_client = httpx.AsyncClient(timeout=30.0)
+    logger.info("=" * 50)
+    logger.info("KrishiVaani Backend Server Started")
+    logger.info("=" * 50)
+    logger.info("Available endpoints:")
+    logger.info("  - POST /chat - AI Chat")
+    logger.info("  - POST /chat/speech - Speech Chat")
+    logger.info("  - POST /api/weather - Weather Data")
+    logger.info("  - POST /api/pest/detect - Pest Detection")
+    logger.info("  - POST /api/market/prices - Market Prices")
+    logger.info("  - POST /api/soil/analyze - Soil Analysis")
+    logger.info("=" * 50)
+    yield
+    await http_client.aclose()
+    logger.info("KrishiVaani Backend Server Stopped")
+
+
+# Create FastAPI app
+app = FastAPI(
+    title="KrishiVaani API",
+    description="Intelligent Agricultural Advisory System for Indian Farmers",
+    version="2.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten for production
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -----------------------
-# Chat Schemas
-# -----------------------
-class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
-    content: str
-    timestamp: Optional[str] = None
+# Include all routers
+app.include_router(chat_router)       # /chat/* - defined in main.py, uses backend.agent
+app.include_router(weather_router)    # /api/weather/*
+app.include_router(pest_router)       # /api/pest/*
+app.include_router(market_router)     # /api/market/*
+app.include_router(soil_router)       # /api/soil/*
 
-class ChatRequest(BaseModel):
-    query: str
-    chat_history: Optional[List[ChatMessage]] = []
-    metadata_filter: Optional[Dict[str, Any]] = None
-    top_k: Optional[int] = None
-    use_context: Optional[bool] = True  # Whether to use RAG context or just LLM
 
-class ChatResponse(BaseModel):
-    answer: str
-    sources: List[Dict[str, Any]]
-    chat_id: Optional[str] = None
-    has_context: bool
-
-class StreamChatRequest(BaseModel):
-    query: str
-    chat_history: Optional[List[ChatMessage]] = []
-    metadata_filter: Optional[Dict[str, Any]] = None
-    top_k: Optional[int] = None
-
-# -----------------------
-# Core Chat Functions
-# -----------------------
-def embed_query(text: str) -> List[float]:
-    """Generate embedding for query text using Gemini."""
-    r = genai.embed_content(model=GEMINI_EMBEDDING_MODEL, content=text)
-    return r["embedding"]
-
-def similarity_search(
-    query_vec: List[float], 
-    top_k: int = TOP_K, 
-    metadata_filter: Optional[Dict[str, Any]] = None
-) -> List[Dict]:
-    """Search for similar documents in Supabase vector store."""
-    payload = {
-        "query_embedding": query_vec,
-        "match_count": top_k,
-        "filter": metadata_filter
-    }
-    res = supabase.rpc("match_documents", payload).execute()
-    if res.error:
-        raise HTTPException(status_code=500, detail=f"Vector search error: {res.error.message}")
-    return res.data or []
-
-def format_chat_history(chat_history: List[ChatMessage]) -> str:
-    """Format chat history for context."""
-    if not chat_history:
-        return ""
-    
-    formatted = []
-    for msg in chat_history[-6:]:  # Last 6 messages for context
-        role = "Human" if msg.role == "user" else "Assistant"
-        formatted.append(f"{role}: {msg.content}")
-    
-    return "\n".join(formatted)
-
-async def generate_response(
-    context_blocks: List[str], 
-    question: str, 
-    chat_history: List[ChatMessage] = None
-) -> str:
-    """Generate response using Perplexity AI with context and chat history."""
-    
-    # Enhanced system prompt for agriculture domain
-    system_prompt = (
-        "You are KrishiVaani, an expert agricultural assistant for Indian farmers, "
-        "especially small and marginal farmers. You provide practical, actionable advice "
-        "based on Indian farming conditions and practices.\n\n"
-        "Guidelines:\n"
-        "- Use ONLY the provided context when available\n"
-        "- Be concise, practical, and farmer-friendly\n"
-        "- Provide dosages in local units (kg/acre, ml/liter, etc.)\n"
-        "- Consider Indian climate, soil, and crop conditions\n"
-        "- If information is not in context, clearly state limitations\n"
-        "- Prioritize safe, sustainable farming practices\n"
-        "- Use simple Hindi/English terms that farmers understand"
-    )
-    
-    # Build user message with context and history
-    user_parts = []
-    
-    # Add chat history if available
-    if chat_history:
-        history_text = format_chat_history(chat_history)
-        if history_text:
-            user_parts.append(f"Previous conversation:\n{history_text}\n")
-    
-    # Add context if available
-    if context_blocks:
-        context_text = "\n\n".join([f"[Context {i+1}]\n{c}" for i, c in enumerate(context_blocks)])
-        user_parts.append(f"Relevant information from knowledge base:\n{context_text}\n")
-    
-    # Add current question
-    user_parts.append(f"Current question: {question}\n\nPlease provide a helpful response:")
-    
-    user_message = "\n".join(user_parts)
-
-    headers = {
-        "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    
-    payload = {
-        "model": PERPLEXITY_MODEL,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
-        "temperature": 0.3,
-        "max_tokens": 800,
-    }
-    
-    async with httpx.AsyncClient(timeout=60) as client:
-        response = await client.post(
-            "https://api.perplexity.ai/chat/completions", 
-            headers=headers, 
-            json=payload
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
-
-# -----------------------
-# Chat Routes
-# -----------------------
-@app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """Main chat endpoint with RAG functionality."""
-    
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
-    sources = []
-    context_blocks = []
-    has_context = False
-    
-    # Perform RAG search if enabled
-    if request.use_context:
-        try:
-            # Generate query embedding
-            query_embedding = embed_query(request.query)
-            
-            # Search for relevant documents
-            matches = similarity_search(
-                query_embedding, 
-                top_k=request.top_k or TOP_K, 
-                metadata_filter=request.metadata_filter
-            )
-            
-            if matches:
-                has_context = True
-                # Process search results
-                for match in matches:
-                    sources.append({
-                        "id": match["id"],
-                        "metadata": match.get("metadata", {}),
-                        "similarity_score": match.get("distance", 0),
-                        "preview": match["document_text"][:200] + "..." if len(match["document_text"]) > 200 else match["document_text"]
-                    })
-                    
-                    # Prepare context block (limit length for token efficiency)
-                    block = match["document_text"]
-                    if len(block) > 1500:
-                        block = block[:1500] + "..."
-                    context_blocks.append(block)
-        
-        except Exception as e:
-            # Log error but continue without context
-            print(f"RAG search error: {e}")
-    
-    # Generate response
-    try:
-        answer = await generate_response(
-            context_blocks, 
-            request.query, 
-            request.chat_history
-        )
-        
-        return ChatResponse(
-            answer=answer,
-            sources=sources,
-            has_context=has_context
-        )
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Response generation error: {str(e)}")
-
-@app.post("/chat/simple")
-async def simple_chat(query: str):
-    """Simplified chat endpoint without RAG context."""
-    
-    if not query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
-    try:
-        answer = await generate_response([], query, [])
-        return {"answer": answer, "has_context": False}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
-
-@app.post("/chat/speech")
-async def speech_chat(request: ChatRequest):
-    """Specialized endpoint for speech-to-text queries with enhanced context."""
-    
-    if not request.query.strip():
-        raise HTTPException(status_code=400, detail="Query cannot be empty")
-    
-    sources = []
-    context_blocks = []
-    has_context = False
-    
-    # Enhanced RAG search for speech queries
-    try:
-        # Generate query embedding
-        query_embedding = embed_query(request.query)
-        
-        # Search for relevant documents with higher top_k for speech queries
-        matches = similarity_search(
-            query_embedding, 
-            top_k=6,  # Higher context for speech queries
-            metadata_filter=request.metadata_filter
-        )
-        
-        if matches:
-            has_context = True
-            # Process search results
-            for match in matches:
-                sources.append({
-                    "id": match["id"],
-                    "metadata": match.get("metadata", {}),
-                    "similarity_score": match.get("distance", 0),
-                    "preview": match["document_text"][:200] + "..." if len(match["document_text"]) > 200 else match["document_text"]
-                })
-                
-                # Prepare context block (limit length for token efficiency)
-                block = match["document_text"]
-                if len(block) > 1200:  # Slightly shorter for speech responses
-                    block = block[:1200] + "..."
-                context_blocks.append(block)
-    
-    except Exception as e:
-        # Log error but continue without context
-        print(f"RAG search error: {e}")
-    
-    # Generate response with speech-optimized prompt
-    try:
-        # Enhanced system prompt for speech queries
-        speech_system_prompt = (
-            "You are KrishiVaani, an expert agricultural assistant for Indian farmers. "
-            "This is a voice query, so provide clear, concise, and actionable responses "
-            "that are easy to understand when spoken aloud.\n\n"
-            "Guidelines:\n"
-            "- Use ONLY the provided context when available\n"
-            "- Keep responses concise but informative (2-3 sentences)\n"
-            "- Use simple, clear language suitable for voice communication\n"
-            "- Provide practical, actionable advice\n"
-            "- Use local units (kg/acre, ml/liter, etc.)\n"
-            "- Consider Indian farming conditions\n"
-            "- If information is not in context, clearly state limitations\n"
-            "- Use simple Hindi/English terms that farmers understand"
-        )
-        
-        # Build user message with context and history
-        user_parts = []
-        
-        # Add chat history if available
-        if request.chat_history:
-            history_text = format_chat_history(request.chat_history)
-            if history_text:
-                user_parts.append(f"Previous conversation:\n{history_text}\n")
-        
-        # Add context if available
-        if context_blocks:
-            context_text = "\n\n".join([f"[Context {i+1}]\n{c}" for i, c in enumerate(context_blocks)])
-            user_parts.append(f"Relevant information from knowledge base:\n{context_text}\n")
-        
-        # Add current question
-        user_parts.append(f"Voice question: {request.query}\n\nPlease provide a helpful response:")
-        
-        user_message = "\n".join(user_parts)
-
-        headers = {
-            "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-            "Content-Type": "application/json",
-        }
-        
-        payload = {
-            "model": PERPLEXITY_MODEL,
-            "messages": [
-                {"role": "system", "content": speech_system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            "temperature": 0.3,
-            "max_tokens": 600,  # Shorter for voice responses
-        }
-        
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
-                "https://api.perplexity.ai/chat/completions", 
-                headers=headers, 
-                json=payload
-            )
-            response.raise_for_status()
-            data = response.json()
-            answer = data["choices"][0]["message"]["content"]
-        
-        return ChatResponse(
-            answer=answer,
-            sources=sources,
-            has_context=has_context
-        )
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Speech response generation error: {str(e)}")
-
-@app.get("/chat/models")
-def get_available_models():
-    """Get information about available models and configuration."""
+@app.get("/")
+async def root():
+    """Root endpoint with API information."""
     return {
-        "embedding_model": GEMINI_EMBEDDING_MODEL,
-        "chat_model": PERPLEXITY_MODEL,
-        "max_context_chunks": TOP_K,
-        "features": {
-            "rag_search": True,
-            "chat_history": True,
-            "metadata_filtering": True,
-            "agriculture_domain": True
+        "service": "KrishiVaani API",
+        "version": "2.0.0",
+        "status": "healthy",
+        "description": "Intelligent Agricultural Advisory System for Indian Farmers",
+        "endpoints": {
+            "chat": {
+                "POST /chat": "AI-powered chat with agricultural advisory",
+                "POST /chat/speech": "Speech-to-text optimized chat",
+                "POST /chat/simple": "Simple query chat",
+                "POST /chat/rollback/{session_id}": "Rollback conversation state"
+            },
+            "weather": {
+                "POST /api/weather": "Get weather data and agricultural advisory",
+                "GET /api/weather/health": "Weather service health check"
+            },
+            "pest": {
+                "POST /api/pest/detect": "Detect pest from image",
+                "GET /api/pest/pesticides": "Get pesticides database",
+                "GET /api/pest/health": "Pest service health check"
+            },
+            "market": {
+                "POST /api/market/prices": "Get market prices for location",
+                "GET /api/market/health": "Market service health check"
+            },
+            "soil": {
+                "POST /api/soil/analyze": "Analyze soil health card",
+                "GET /api/soil/health": "Soil service health check"
+            }
+        },
+        "documentation": {
+            "swagger": "/docs",
+            "redoc": "/redoc"
         }
     }
+
 
 @app.get("/health")
-def health_check():
-    """Health check endpoint."""
-    try:
-        # Test Supabase connection
-        supabase.table(SUPABASE_TABLE).select("id").limit(1).execute()
-        return {
-            "status": "healthy",
-            "services": {
-                "supabase": "connected",
-                "gemini": "configured",
-                "perplexity": "configured"
-            }
+async def health_check():
+    """Overall system health check."""
+    return {
+        "status": "healthy",
+        "service": "KrishiVaani API",
+        "version": "2.0.0",
+        "services": {
+            "chat": "operational",
+            "weather": "operational",
+            "pest": "operational",
+            "market": "operational",
+            "soil": "operational"
         }
-    except Exception as e:
-        return {
-            "status": "degraded",
-            "error": str(e)
-        }
+    }
 
-# -----------------------
-# Advanced Chat Features
-# -----------------------
-@app.post("/chat/with-filters")
-async def chat_with_filters(
-    query: str,
-    crop_type: Optional[str] = None,
-    region: Optional[str] = None,
-    season: Optional[str] = None,
-    language: Optional[str] = None
-):
-    """Chat with specific filters for better context matching."""
-    
-    metadata_filter = {}
-    if crop_type:
-        metadata_filter["crop_type"] = crop_type
-    if region:
-        metadata_filter["region"] = region  
-    if season:
-        metadata_filter["season"] = season
-    if language:
-        metadata_filter["language"] = language
-    
-    request = ChatRequest(
-        query=query,
-        metadata_filter=metadata_filter if metadata_filter else None,
-        use_context=True
+
+# Legacy endpoint mappings for backward compatibility
+# These redirect old endpoints to new ones
+
+@app.post("/detect-pest")
+async def legacy_detect_pest(file):
+    """Legacy endpoint - redirects to /api/pest/detect"""
+    from backend.pest import detect_pest
+    return await detect_pest(file)
+
+
+@app.post("/weather")
+async def legacy_weather(location):
+    """Legacy endpoint - redirects to /api/weather"""
+    from backend.weather import get_weather_data
+    return await get_weather_data(location)
+
+
+@app.post("/market-prices")
+async def legacy_market(location):
+    """Legacy endpoint - redirects to /api/market/prices"""
+    from backend.market import get_market_prices
+    return await get_market_prices(location)
+
+
+@app.post("/analyze-soil")
+async def legacy_soil(file):
+    """Legacy endpoint - redirects to /api/soil/analyze"""
+    from backend.soil import analyze_soil
+    return await analyze_soil(file)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+        # log_level="info"
     )
-    
-    return await chat(request)
-
-@app.get("/chat/stats")
-def get_chat_stats():
-    """Get statistics about the knowledge base."""
-    try:
-        # Get document count
-        result = supabase.table(SUPABASE_TABLE).select("id", count="exact").execute()
-        doc_count = result.count if result.count else 0
-        
-        # Get metadata distribution (if available)
-        metadata_result = supabase.table(SUPABASE_TABLE).select("metadata").limit(100).execute()
-        
-        return {
-            "total_documents": doc_count,
-            "status": "active"
-        }
-    except Exception as e:
-        return {
-            "total_documents": 0,
-            "status": "error",
-            "error": str(e)
-        }
